@@ -46,7 +46,7 @@ CXXFLAGS := $(BASE_FLAGS) $(DEBUG_FLAGS) $(WARNING_FLAGS) $(DEP_FLAGS)
 LDFLAGS := -lpthread -lm $(DEBUG_FLAGS) 
 
 ## External libraries
-EXT_LIBS := sdl3
+EXT_LIBS :=
 
 # Only call pkg-config if at least one external library is specified
 ifeq ($(EXT_LIBS),)
