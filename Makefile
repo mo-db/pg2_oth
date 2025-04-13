@@ -5,7 +5,7 @@
 # to add libraries edit EXT_LIBS variable - can also be empty
 
 ## BASE VARS
-SRC_NAMES ?= main2
+SRC_NAMES := main2
 SRC_DIR := src/ex03
 OBJ_DIR := obj
 BIN_DIR := bin
@@ -30,7 +30,7 @@ BASE_FLAGS := -std=c++23 -I$(SRC_DIR)
 #  $(OBJ_FILES): $(SRC_FILES)
 
 # Warning and Debug flags, debug flags need to be included when linking
-M ?= debug
+MODE ?= debug
 ifeq ($(M), debug)
 	DEBUG_FLAGS := -g -fsanitize=address,undefined
 	WARNING_FLAGS := -Wall -Wextra -pedantic
@@ -42,9 +42,9 @@ else ifeq ($(M), simple)
 	WARNING_FLAGS := -Wall
 endif
 
-## Debug Flag presets
-ADDFLAGS ?=
-CXXFLAGS := $(BASE_FLAGS) $(DEBUG_FLAGS) $(WARNING_FLAGS) $(DEP_FLAGS) $(ADDFLAGS)
+## Debug Flag presets, AF to add flags
+AF ?=
+CXXFLAGS := $(BASE_FLAGS) $(DEBUG_FLAGS) $(WARNING_FLAGS) $(ADDFLAGS)
 LDFLAGS := -lpthread -lm $(DEBUG_FLAGS) 
 
 ## External libraries
