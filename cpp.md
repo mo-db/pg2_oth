@@ -256,4 +256,13 @@
     - `declaration` is compile-time, definition has a role in run-time
     - datentyp ist `nicht primitiv` -> mehrere Komponenten
     - innerhalb `< >` compile-time, also nur Konstanten erlaubt
+- 03.04:
+[https://en.cppreference.com/w/cpp/language/reference]
+  - 0:02
+    - `&` address operator, type identifier operator
+    - `&` `reference parameter`, change the mode of `parameter transfer`
+    - `using` (compile-time) is similar to `typedef` (run-time)
+  - [EX]
+    - `-frtti` -> runtime type informations, off by default
+    - `OpCode`
 
