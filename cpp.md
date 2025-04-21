@@ -241,7 +241,7 @@
 - 02: !rev
   - `<<, >>` operator skip whitepaces
 
-# SC
+# Screen Casts PG2
 - 31.03:
 [https://en.cppreference.com/w/cpp/language/operators]
 [https://en.cppreference.com/w/cpp/language/user_literal#Literal_operators]
@@ -258,11 +258,63 @@
     - innerhalb `< >` compile-time, also nur Konstanten erlaubt
 - 03.04:
 [https://en.cppreference.com/w/cpp/language/reference]
-  - 0:02
+  - 0:02 - reference
     - `&` address operator, type identifier operator
     - `&` `reference parameter`, change the mode of `parameter transfer`
     - `using` (compile-time) is similar to `typedef` (run-time)
+    - `objects` are run-time constructs and classes are compile-time types
+    - bei `&` referencen beziehen wir uns nicht auf speicheradressen
+  - 1:05 - tipps fuer ostern uebung
+    - `lvalue reference` == alias, funktioniert wie pointer aber besser zu handeln
+    - referenzen sind compile-time, belegen `keinen speicher` zur laufzeit
+    - `rvalue reference` etwas was rechts vom = steht
+    - referenzen haben keine adresse zur laufzeit
+    - `int *&ir = &var` is a reference of a pointer
+    - functionen returnen rvalues, als referenz koennen diese dennoch geaendert werden
+    - referenz ist ein `unveraenderlicher pointer`
+    - muss bei der vereinbarung initialisiert werden
   - [EX]
     - `-frtti` -> runtime type informations, off by default
     - `OpCode`
-
+- 07.04
+  - 0:00 reference
+    - `int &func(int&);` returns a lvalue, `func(int&) += 5` is thus possible
+  - 0:42 - enum
+    - enums are compile-time constructs, reserve no run-time memory
+    - c++ enum class is type save
+    - `enum struct` get value with scope operator `struct::thing1` namespace
+    - alias definitions with `using` and `typedef`
+  - 1:05 - objektorientierung
+    - data saved in `member variables` describe the `state` of an object
+    - objects are `statefull` - zustandbehaftet
+    - `encapsilation` -> allows to can change the `implementation` 
+      while the `interface` stays the same
+    - c++ strcut can contain `function with body`, and be used without keyword
+    - `extern` -> declare something global without reserving stack memory
+    - `inline` -> allows more than one definition
+    - `const pointer` -> deref. value cannot be change
+- 10.04 
+  - 0:00 - const
+    - `const int *p` or `int const *p` prevents the value from changing
+    - `int *const p` prevents the pointer from changing
+    - not constant reference to constant variable is error
+  - 0:18 - (volatile) - braucht man fast nie
+    - mark that a variable can be changed from another process, is not stable
+      - prevents compiler from optimizing the memory calls away
+    - `setjump` jump from process into operating system -> `nonlocal goto`
+      -> `hardware exceptions`
+    - `setjump(catchPos)` -> catch position saves the state of the process
+    - `longjump` jumps back to local process
+    - `longjump(catchPos, failVal)`
+  - 0:46 - `trailing return` of functions
+  - 1:00 - operators
+  [https://www.learncpp.com/cpp-tutorial/overloading-the-comparison-operators/]
+    - `<=>` space ship operator -> overloading comparison operator [!rev]
+      [https://en.cppreference.com/w/cpp/language/operator_member_access]
+    - `int ds::*ip;` defines pointer ip that can only point to members the namespace
+      variables of the object ds
+    - `i2.*ip;` access member variable of an object instance 
+      with the namespace pointer ip
+    - `ds::*ip = &ds::b;`
+- 14.04
+  - `struct s;` `s da { 3, 4 }, db ( 6, 7 };`

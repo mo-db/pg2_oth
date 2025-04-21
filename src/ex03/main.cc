@@ -1,12 +1,23 @@
-#include <typeinfo>
 #include <iostream>
-#include <complex>
 
 using namespace std;
-using namespace std::literals;
+
+std::array<int, 4> g_values { 1, 2, 3, 4, };
+int test_func() {
+	std::array<int, 4> values { 4, 3, 2, 1, };
+	return values[1];
+}
+
+struct valueHolder {
+	int value;
+	void print() {
+		std::cout << value << std::endl;
+	};
+};
 
 int main() {
-  auto a = exp(M_PI * 1i) + 1.;
-  cout << typeid(a).name() << endl << "value: " << a << endl;
+	valueHolder data;
+	data.value = 4711;
+	data.print();
   return 0;
 }
