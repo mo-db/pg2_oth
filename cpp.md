@@ -317,4 +317,7 @@
       with the namespace pointer ip
     - `ds::*ip = &ds::b;`
 - 14.04
+  - !REV spaceship operator
   - `struct s;` `s da { 3, 4 }, db ( 6, 7 };`
+  - `for each` schleife for (int &x : array) {;}
+  - for bool `proxy iterator`

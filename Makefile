@@ -5,8 +5,8 @@
 # to add libraries edit EXT_LIBS variable - can also be empty
 
 ## BASE VARS
-SRC_NAMES := main
-SRC_DIR := src/ex04
+SRC_NAMES := myqueue
+SRC_DIR := src/ex05
 OBJ_DIR := obj
 BIN_DIR := bin
 
