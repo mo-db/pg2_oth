@@ -320,4 +320,12 @@
   - !REV spaceship operator
   - `struct s;` `s da { 3, 4 }, db ( 6, 7 };`
   - `for each` schleife for (int &x : array) {;}
-  - for bool `proxy iterator`
+- 24.04
+  - for bool `proxy iterator` `&&` because bool is packed in containers
+  - c++ containers can be returned from function scope -> `Copy-elision`
+  - for classes we differentiate `implementation` and `interface`
+  - 3 levels of class visibility: `public`, `private`, `protected`
+  - classes are blueprints for objects
+  - at runtime there exist only objects, no classes
+  - defintion of member functions outside of class with ::
+

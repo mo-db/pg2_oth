@@ -5,8 +5,9 @@
 # to add libraries edit EXT_LIBS variable - can also be empty
 
 ## BASE VARS
-SRC_NAMES := pastri05
-SRC_DIR := by_example
+SRC_NAMES := cards01
+SRC_DIR := by_example/ch-02
+# SRC_DIR := src
 OBJ_DIR := obj
 BIN_DIR := bin
 
