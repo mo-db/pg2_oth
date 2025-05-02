@@ -56,7 +56,9 @@
   - `std::array`, more limited than vector, but more performant
 
 ## Classes
-- classes have `member functions`
+- virtual function
+- friend functions/classes have access to private members
+- const member functions can be called even with non-const values
 
 ## initialization [https://www.learncpp.com/cpp-tutorial/variable-assignment-and-initialization/]
 - types of initialization:

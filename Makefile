@@ -5,9 +5,9 @@
 # to add libraries edit EXT_LIBS variable - can also be empty
 
 ## BASE VARS
-SRC_NAMES := cards01
-SRC_DIR := by_example/ch-02
-# SRC_DIR := src
+SRC_NAMES := stack
+# SRC_DIR := by_example/ch-02
+SRC_DIR := src/other
 OBJ_DIR := obj
 BIN_DIR := bin
 
@@ -32,13 +32,13 @@ BASE_FLAGS := -std=c++23 -I$(SRC_DIR)
 
 # Warning and Debug flags, debug flags need to be included when linking
 MODE ?= debug
-ifeq ($(M), debug)
+ifeq ($(MODE), debug)
 	DEBUG_FLAGS := -g -fsanitize=address,undefined
 	WARNING_FLAGS := -Wall -Wextra -pedantic
-else ifeq ($(M), thread)
+else ifeq ($(MODE), thread)
 	DEBUG_FLAGS := -g -fsanitize=thread
 	WARNING_FLAGS := -Wall -Wextra -pedantic
-else ifeq ($(M), simple)
+else ifeq ($(MODE), simple)
 	DEBUG_FLAGS :=
 	WARNING_FLAGS := -Wall
 endif
