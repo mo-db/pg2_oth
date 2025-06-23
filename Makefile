@@ -5,9 +5,9 @@
 # to add libraries edit EXT_LIBS variable - can also be empty
 
 ## BASE VARS
-SRC_NAMES := cpp
-# SRC_DIR := by_example/ch-02
-SRC_DIR := src
+SRC_NAMES := main cards
+# SRC_DIR := src
+SRC_DIR := by_example/ch-05
 OBJ_DIR := obj
 BIN_DIR := bin
 
