@@ -78,4 +78,10 @@ void update_viewport(State& state, render::Viewport& viewport) {
 	else if (state.input.right.down()) {
 		viewport.xy_offset.x -= 4;
 	}
+	else if (state.input.up.just_pressed()) {
+		viewport.scale *= 0.75;
+	}
+	else if (state.input.down.just_pressed()) {
+		viewport.scale *= 1.25;
+	}
 }
