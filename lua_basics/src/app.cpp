@@ -27,6 +27,15 @@ bool app_init(App &app, int width, int height) {
   app.window_texture =
       SDL_CreateTexture(app.renderer, SDL_PIXELFORMAT_RGBA32,
                         SDL_TEXTUREACCESS_TARGET, width, height);
+
+	// test
+	app.video.pixel_buffer = std::unique_ptr<render::PixelBuffer>(
+			new render::PixelBuffer{app.width * app.pixel_density,
+															app.height * app.pixel_density});
+	app.video.pixel_buffer->clear(0x00000000);
+	app.video.viewport = std::unique_ptr<render::Viewport>(
+			new render::Viewport{});
+
   return true;
 }
 
@@ -55,4 +64,18 @@ void query_input(State& state) {
 	const bool* key_states = SDL_GetKeyboardState(nullptr);
 	state.input.shift.down(key_states[SDL_SCANCODE_LSHIFT]);
 	state.input.ctrl.down(key_states[SDL_SCANCODE_LCTRL]);
+	state.input.left.down(key_states[SDL_SCANCODE_LEFT]);
+	state.input.right.down(key_states[SDL_SCANCODE_RIGHT]);
+	state.input.up.down(key_states[SDL_SCANCODE_UP]);
+	state.input.down.down(key_states[SDL_SCANCODE_DOWN]);
+}
+
+
+void update_viewport(State& state, render::Viewport& viewport) {
+	if (state.input.left.down()) {
+		viewport.xy_offset.x += 4;
+	}
+	else if (state.input.right.down()) {
+		viewport.xy_offset.x -= 4;
+	}
 }

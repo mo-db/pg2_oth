@@ -4,6 +4,7 @@
 #include <iostream>
 #include <exception>
 #include <numbers>
+#include <memory>
 
 #include <luajit-2.1/lua.hpp>
 #include <SDL3/SDL.h>

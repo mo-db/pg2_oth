@@ -1,7 +1,7 @@
 #include "foo.hpp"
 
-void foo_func(App& app, render::PixelBuffer& pixel_buffer) {
-	pixel_buffer.clear(0x00000000);
+void foo_func(App& app) {
+	app.video.pixel_buffer->clear(0x00000000);
 
 	static float p1_x = 100;
 	static float p1_y = 100;
@@ -29,5 +29,28 @@ void foo_func(App& app, render::PixelBuffer& pixel_buffer) {
 
 	Vec2 p1 {p1_x, app.state.input.mouse.y};
 	Vec2 p2 {p2_x, p2_y};
-	render::draw_rect(pixel_buffer, p1, p2, color);
+	render::draw_rect(*app.video.pixel_buffer, *app.video.viewport, p1, p2, color);
+}
+
+void bar_test() {
+	Manager manager;
+	// std::cout << "size1: " << manager.dc1_ptr->get_data_size() << std::endl;
+	// std::cout << "size2: " << manager.dc2_ptr->get_data_size() << std::endl;
+	// std::cout << "size2_small: " << manager.dc2_ptr_small->get_data_size() << std::endl;
+	// *manager.dc2_ptr= *manager.dc2_ptr_small;
+	// std::cout << "size2: " << manager.dc2_ptr->get_data_size() << std::endl;
+	// std::cout << "size2_small: " << manager.dc2_ptr_small->get_data_size() << std::endl;
+
+	std::cout << "size: " << manager.dc1_obj.get_data_size() << std::endl;
+	std::cout << "size_small: " << manager.dc1_obj_small.get_data_size() << std::endl;
+
+	manager.dc1_obj = manager.dc1_obj_small;
+
+	std::cout << "size: " << manager.dc1_obj.get_data_size() << std::endl;
+	std::cout << "size_small: " << manager.dc1_obj_small.get_data_size() << std::endl;
+
+}
+
+void bar_func() {
+	bar_test();
 }

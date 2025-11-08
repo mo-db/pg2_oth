@@ -55,6 +55,7 @@ struct State {
 
 	struct Video {
 		GenericState panning{};
+		GenericState scaling{};
 	} video;
 
 	struct Input {
@@ -63,6 +64,10 @@ struct State {
 		InputState mouse_right{};
 		InputState shift{};
 		InputState ctrl{};
+		InputState left{};
+		InputState right{};
+		InputState up{};
+		InputState down{};
 		Vec2 mouse{};
 	} input;
 };
@@ -77,6 +82,12 @@ struct App {
 	int width{};
 	int height{};
 
+	struct Video {
+		std::unique_ptr<render::PixelBuffer> pixel_buffer{};
+		std::unique_ptr<render::Viewport> viewport{};
+	} video;
+
+
 	State state;
 };
 
@@ -88,3 +99,6 @@ void process_events(State& state);
 
 // run every frame
 void query_input(State& state);
+
+// update the render viewport using input
+void update_viewport(State& state, render::Viewport& viewport);
