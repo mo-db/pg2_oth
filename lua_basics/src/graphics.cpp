@@ -29,7 +29,13 @@ Vec2 operator*(const Vec2 &v, float d) {
 	return {v.x * d, v.y * d};
 }
 Vec2 operator*(float d, const Vec2 &v) {
-	return v * d;
+	return {v.x * d, v.y * d};
+}
+Vec2 operator/(const Vec2 &v, float d) {
+	return {v.x / d, v.y / d};
+}
+Vec2 operator/(float d, const Vec2 &v) {
+	return {d / v.x, d / v.y};
 }
 
 namespace vec2 {

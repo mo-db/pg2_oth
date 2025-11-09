@@ -17,6 +17,8 @@ Vec2 operator+(const Vec2 &a, const Vec2 &b);
 Vec2 operator-(const Vec2 &a, const Vec2 &b);
 Vec2 operator*(const Vec2 &v, float d);
 Vec2 operator*(float d, const Vec2 &v);
+Vec2 operator/(const Vec2 &v, float d);
+Vec2 operator/(float d, const Vec2 &v);
 
 namespace vec2 {
 float dot(const Vec2 &a, const Vec2 &b);

@@ -73,10 +73,10 @@ void query_input(State& state) {
 
 void update_viewport(State& state, render::Viewport& viewport) {
 	if (state.input.left.down()) {
-		viewport.xy_offset.x += 4;
+		viewport.xy_offset.x += (4 / viewport.scale);
 	}
 	else if (state.input.right.down()) {
-		viewport.xy_offset.x -= 4;
+		viewport.xy_offset.x -= (4 / viewport.scale);
 	}
 	else if (state.input.up.just_pressed()) {
 		viewport.scale *= 0.75;

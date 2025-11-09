@@ -24,11 +24,16 @@ void PixelBuffer::clear(uint32_t color) {
 void draw_rect(PixelBuffer& pixel_buffer, Viewport& viewport, Vec2 p1, Vec2 p2, uint32_t color) {
 	p1 = world_to_screen(viewport, p1);
 	p2 = world_to_screen(viewport, p2);
+
 	int x1 = std::lround(std::max(std::min(p1.x, p2.x), 0.f));
 	int x2 = std::lround(std::min(std::max(p1.x, p2.x), (float)pixel_buffer.width));
-
 	int y1 = std::lround(std::max(std::min(p1.y, p2.y), 0.f));
 	int y2 = std::lround(std::min(std::max(p1.y, p2.y), (float)pixel_buffer.height));
+
+	if (x1 > pixel_buffer.width || x2 < 0.0f ||
+			y1 > pixel_buffer.height || y2 < 0.0f ) {
+		return;
+	}
 
 	std::vector<Pos2> pixels{};
 	pixels.reserve((x2 - x1) * (y2 - y1));
@@ -40,13 +45,13 @@ void draw_rect(PixelBuffer& pixel_buffer, Viewport& viewport, Vec2 p1, Vec2 p2, 
 	color_pixels(pixel_buffer, pixels, color);
 }
 
-// Vec2 screen_to_world(App& app, const Vec2 &point_screen) {
-// 	Vec2 vertex_world = point_screen + .xy_offset;
-// 	return vertex_world;
-// }
-//
 Vec2 world_to_screen(Viewport& viewport, const Vec2 &point_world) {
 	Vec2 point_screen = (point_world - viewport.xy_offset) * viewport.scale;
 	return point_screen;
+}
+
+Vec2 screen_to_world(Viewport& viewport, const Vec2 &point_screen) {
+	Vec2 point_world = (point_screen / viewport.scale) + viewport.xy_offset;
+	return point_world;
 }
 } // namespace render

@@ -52,6 +52,6 @@ void draw_trigon_line(PixelBuffer* pixel_buffer);
 // bool update_pan();
 // bool update_zoom();
 // Vec2 screen_to_world(const Vec2 &vertex_screen);
-Vec2 world_to_screen(Viewport& viewport,
-										 const Vec2 &vertex_world);
+Vec2 world_to_screen(Viewport& viewport, const Vec2 &vertex_world);
+Vec2 screen_to_world(Viewport& viewport, const Vec2 &point_screen);
 } // namespace render
