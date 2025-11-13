@@ -1,5 +1,8 @@
 #include "foo.hpp"
 
+// states as functions
+// have boolean and if-conditions for enter/exit
+// return state_var
 
 void rect_sm(App& app, std::vector<SDL_FRect>& rects) {
 	enum State {
@@ -7,7 +10,8 @@ void rect_sm(App& app, std::vector<SDL_FRect>& rects) {
 		NOT,
 	};
 	static State state = NOT;
-	Vec2 mouse = render::screen_to_world(*app.video.viewport, app.state.input.mouse);
+	Vec2 mouse =
+		render::screen_to_world(*app.video.viewport, app.state.input.mouse);
 
 	switch (state) {
 		case DRAWING: {
@@ -33,6 +37,7 @@ void foo_func(App& app) {
 	static std::vector<SDL_FRect> rects{};
 	rect_sm(app, rects);
 
+
 	app.video.pixel_buffer->clear(0x00000000);
 
 	SDL_Color sdl_color{0, 255, 0, 255};
@@ -40,6 +45,12 @@ void foo_func(App& app) {
 	uint32_t color = SDL_MapRGBA(
 			SDL_GetPixelFormatDetails(SDL_PIXELFORMAT_RGBA32), nullptr,
 			sdl_color.r, sdl_color.g, sdl_color.b, sdl_color.a);
+
+	render::Vert2 vert_a{color, Vec2{0.0f, 0.0f}};
+	render::Vert2 vert_b{color, Vec2{100.0f, 100.0f}};
+	render::Vert2 vert_c{color, app.state.input.mouse};
+	// calc_brycentric_factors(vert_a, vert_b, vert_c, app.state.input.mouse);
+	draw_triangle(*app.video.pixel_buffer, vert_a, vert_b, vert_c);
 
 	for (size_t i = 0; i < rects.size(); i++) {
 		Vec2 p1 {rects[i].x, rects[i].y};

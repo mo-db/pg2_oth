@@ -10,6 +10,18 @@ struct Pos2 {
   int y{};
 };
 
+struct Vert2 {
+	uint32_t color{};
+	Vec2 position{};
+};
+
+struct Bary {
+	float alpha{};
+	float beta{};
+	float gamma{};
+};
+
+
 struct PixelBuffer {
   uint32_t *pixels = nullptr;
   int width = 0;
@@ -21,6 +33,10 @@ struct PixelBuffer {
   ~PixelBuffer() { delete pixels; }
   void clear(uint32_t color);
 };
+
+Bary calc_brycentric_factors(Vec2 vert_a, Vec2 vert_b, Vec2 vert_c, Vec2 point_p);
+
+void draw_triangle(PixelBuffer& pixel_buffer, Vert2 vert_a, Vert2 vert_b, Vert2 vert_c);
 
 // struct PixelBuffer {
 // 	std::unique_ptr<uint32_t> pixels{};
