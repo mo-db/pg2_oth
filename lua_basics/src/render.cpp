@@ -83,6 +83,7 @@ Bary calc_brycentric_factors(Vec2 vert_a, Vec2 vert_b, Vec2 vert_c, Vec2 point_p
 	t = b.x / b.y;
 	p.x -= (p.y * t);
 
+	// TODO: I dont fucking understand why u,v,w are calculated like that
 	// get alpha, beta
 	float alpha = p.x / a.x;
 	float beta = p.y / b.y;
@@ -107,10 +108,6 @@ void draw_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vert2 vert_a, 
 	Vec2 va = world_to_screen(viewport, vert_a.position);
 	Vec2 vb = world_to_screen(viewport, vert_b.position);
 	Vec2 vc = world_to_screen(viewport, vert_c.position);
-
-	// Vec2 va = vert_a.position;
-	// Vec2 vb = vert_b.position;
-	// Vec2 vc = vert_c.position;
 
 	int min_x = std::roundl(std::min(std::min(va.x, vb.x), vc.x));
 	int min_y = std::roundl(std::min(std::min(va.y, vb.y), vc.y));
