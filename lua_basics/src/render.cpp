@@ -110,9 +110,13 @@ void draw_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vert2 vert_a, 
 	Vec2 vc = world_to_screen(viewport, vert_c.position);
 
 	int min_x = std::roundl(std::min(std::min(va.x, vb.x), vc.x));
+	min_x = std::max(min_x, 0);
 	int min_y = std::roundl(std::min(std::min(va.y, vb.y), vc.y));
+	min_y = std::max(min_y, 0);
 	int max_x = std::roundl(std::max(std::max(va.x, vb.x), vc.x));
+	max_x = std::min(max_x, pixel_buffer.width);
 	int max_y = std::roundl(std::max(std::max(va.y, vb.y), vc.y));
+	max_y = std::min(max_y, pixel_buffer.height);
 
 	std::vector<Pos2> scanline{};
 	bool scanline_active = false;
@@ -130,11 +134,57 @@ void draw_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vert2 vert_a, 
 			} else {
 				if (scanline_active) {
 					scanline_active = false;
-					color_pixels(pixel_buffer, scanline, 0xFFFFFFFF);
+					color_pixels(pixel_buffer, scanline, vert_a.color);
 				}
 			}
 		}
 	}
+}
+
+// color-modes:
+// 1. [Def.] gradient over length
+// 2. gradient over width
+// 3. 1 color per triangle
+// 4. 1 color
+void draw_wide_line(PixelBuffer& pixel_buffer, Viewport& viewport, 
+		 								Vec2 p1, Vec2 p2, float wd, uint8_t color_mode, 
+										uint32_t color1, uint32_t color2) {
+	Vec2 p_upper;
+	Vec2 p_lower;
+	if (p1.y > p2.y) {
+		p_upper = p1;
+		p_lower = p2;
+	}
+	else {
+		p_upper = p2;
+		p_lower = p1;
+	}
+
+	Vec2 line = p_upper - p_lower;
+
+	Vec2 orthogonal = line.get_orthogonal();
+	orthogonal.normalize();
+
+	Vec2 upper_left = p_upper + orthogonal * (wd/2.0f);
+	upper_left.x = std::round(upper_left.x);
+	upper_left.y = std::round(upper_left.y);
+
+	Vec2 upper_right = upper_left - orthogonal * wd;
+	upper_right.x = std::round(upper_right.x);
+	upper_right.y = std::round(upper_right.y);
+
+	Vec2 lower_left = upper_left - line;
+	lower_left.x = std::round(lower_left.x);
+	lower_left.y = std::round(lower_left.y);
+
+	Vec2 lower_right = upper_right - line;
+	lower_right.x = std::round(lower_right.x);
+	lower_right.y = std::round(lower_right.y);
+
+	draw_triangle(pixel_buffer, viewport, Vert2{color1, upper_left}, 
+								Vert2{color1, lower_right}, Vert2{color1, upper_right});
+	draw_triangle(pixel_buffer, viewport, Vert2{color2, lower_right}, 
+								Vert2{color2, upper_left}, Vert2{color2, lower_left});
 }
 
 

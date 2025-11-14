@@ -52,9 +52,9 @@ void foo_func(App& app) {
 	render::Vert2 vert_a{color, Vec2{100.0f, 100.0f}};
 	render::Vert2 vert_b{color, Vec2{300.0f, 200.0f}};
 	render::Vert2 vert_c{color, mouse};
-	render::Bary bary = render::calc_brycentric_factors(vert_a.position, vert_b.position, vert_c.position, mouse);
-	fmt::print("alpha: {}f, beta: {}f, gamma: {}f\n", bary.alpha, bary.beta, bary.gamma);
-	draw_triangle(*app.video.pixel_buffer, *app.video.viewport, vert_a, vert_b, vert_c);
+	// render::Bary bary = render::calc_brycentric_factors(vert_a.position, vert_b.position, vert_c.position, mouse);
+	// fmt::print("alpha: {}f, beta: {}f, gamma: {}f\n", bary.alpha, bary.beta, bary.gamma);
+	// draw_triangle(*app.video.pixel_buffer, *app.video.viewport, vert_a, vert_b, vert_c);
 
 	for (size_t i = 0; i < rects.size(); i++) {
 		Vec2 p1 {rects[i].x, rects[i].y};
@@ -62,6 +62,9 @@ void foo_func(App& app) {
 		render::draw_rect(*app.video.pixel_buffer, *app.video.viewport, p1, p2, color);
 	}
 
+	draw_wide_line(*app.video.pixel_buffer, *app.video.viewport, 
+		 								Vec2{100, 100}, mouse, 2.0f, 1, 
+										0xFFFF00FF, 0xFF00FFFF);
 	// static float p1_x = 100;
 	// static float p1_y = 100;
 	//

@@ -55,6 +55,9 @@ struct Viewport {
   // Vec2 prev_mouse{};
   // bool panning_active = false;
 };
+void draw_wide_line(PixelBuffer& pixel_buffer, Viewport& viewport, 
+		 								Vec2 p1, Vec2 p2, float wd, uint8_t color_mode, 
+										uint32_t color1, uint32_t color2);
 
 void draw_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vert2 vert_a, Vert2 vert_b, Vert2 vert_c);
 
