@@ -46,11 +46,15 @@ void foo_func(App& app) {
 			SDL_GetPixelFormatDetails(SDL_PIXELFORMAT_RGBA32), nullptr,
 			sdl_color.r, sdl_color.g, sdl_color.b, sdl_color.a);
 
-	render::Vert2 vert_a{color, Vec2{0.0f, 0.0f}};
-	render::Vert2 vert_b{color, Vec2{100.0f, 100.0f}};
-	render::Vert2 vert_c{color, app.state.input.mouse};
-	// calc_brycentric_factors(vert_a, vert_b, vert_c, app.state.input.mouse);
-	draw_triangle(*app.video.pixel_buffer, vert_a, vert_b, vert_c);
+	Vec2 mouse =
+		render::screen_to_world(*app.video.viewport, app.state.input.mouse);
+
+	render::Vert2 vert_a{color, Vec2{100.0f, 100.0f}};
+	render::Vert2 vert_b{color, Vec2{300.0f, 200.0f}};
+	render::Vert2 vert_c{color, mouse};
+	render::Bary bary = render::calc_brycentric_factors(vert_a.position, vert_b.position, vert_c.position, mouse);
+	fmt::print("alpha: {}f, beta: {}f, gamma: {}f\n", bary.alpha, bary.beta, bary.gamma);
+	draw_triangle(*app.video.pixel_buffer, *app.video.viewport, vert_a, vert_b, vert_c);
 
 	for (size_t i = 0; i < rects.size(); i++) {
 		Vec2 p1 {rects[i].x, rects[i].y};

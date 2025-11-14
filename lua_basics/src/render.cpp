@@ -86,22 +86,32 @@ Bary calc_brycentric_factors(Vec2 vert_a, Vec2 vert_b, Vec2 vert_c, Vec2 point_p
 	// get alpha, beta
 	float alpha = p.x / a.x;
 	float beta = p.y / b.y;
-	float gamma = 1.0f - alpha - beta;
+	float gamma = (1.0f - alpha) - beta;
 
-	Bary bary{alpha, beta, gamma};
+	float u = 1.0f - alpha;
+	float v = alpha - beta;
+	float w = beta;
+
+
+	Bary bary{u, v, w};
+	// Bary bary{alpha, beta, gamma};
 	return bary;
 }
 
 
-void draw_triangle(PixelBuffer& pixel_buffer, Vert2 vert_a, Vert2 vert_b, Vert2 vert_c) {
+void draw_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vert2 vert_a, Vert2 vert_b, Vert2 vert_c) {
 
 	Bary bary{};
 
-
 	// get min/max x and min/max y
-	Vec2 va = vert_a.position;
-	Vec2 vb = vert_b.position;
-	Vec2 vc = vert_c.position;
+	Vec2 va = world_to_screen(viewport, vert_a.position);
+	Vec2 vb = world_to_screen(viewport, vert_b.position);
+	Vec2 vc = world_to_screen(viewport, vert_c.position);
+
+	// Vec2 va = vert_a.position;
+	// Vec2 vb = vert_b.position;
+	// Vec2 vc = vert_c.position;
+
 	int min_x = std::roundl(std::min(std::min(va.x, vb.x), vc.x));
 	int min_y = std::roundl(std::min(std::min(va.y, vb.y), vc.y));
 	int max_x = std::roundl(std::max(std::max(va.x, vb.x), vc.x));
@@ -112,6 +122,7 @@ void draw_triangle(PixelBuffer& pixel_buffer, Vert2 vert_a, Vert2 vert_b, Vert2 
 	for (int i = min_y; i < max_y; i++) {
 		for (int j = min_x; j < max_x; j++) {
 			bary = calc_brycentric_factors(va, vb, vc, Vec2{(float)j, (float)i});
+
 			if (bary.alpha >= 0.0f &&
 					bary.beta >= 0.0f &&
 					bary.gamma >= 0.0f) {

@@ -36,7 +36,7 @@ struct PixelBuffer {
 
 Bary calc_brycentric_factors(Vec2 vert_a, Vec2 vert_b, Vec2 vert_c, Vec2 point_p);
 
-void draw_triangle(PixelBuffer& pixel_buffer, Vert2 vert_a, Vert2 vert_b, Vert2 vert_c);
+
 
 // struct PixelBuffer {
 // 	std::unique_ptr<uint32_t> pixels{};
@@ -55,6 +55,8 @@ struct Viewport {
   // Vec2 prev_mouse{};
   // bool panning_active = false;
 };
+
+void draw_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vert2 vert_a, Vert2 vert_b, Vert2 vert_c);
 
 void color_pixels(PixelBuffer& pixel_buffer, std::vector<Pos2>& pixels,
 		uint32_t color);
