@@ -395,10 +395,10 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 	Pos2 right{v_start};
 
 	while(1) {
-		// left
+		// ---- left line ----
 		if (left_swapped) { // dy is slow
 			while(1) {
-				fmt::print("###1###\n");
+				// fmt::print("###1###\n");
 				err_left += dy;
 				left.x += sx_left;
 				if (2*err_left >= dx_left) {
@@ -417,10 +417,10 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 			}
 		}
 
-		// right
+		// ---- right line ----
 		if (right_swapped) { // dy is slow
 			while(1) {
-				fmt::print("###2###\n");
+				// fmt::print("###2###\n");
 				err_right += dy;
 				right.x += sx_right;
 				if (2*err_right >= dx_right) {
@@ -439,8 +439,7 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 			}
 		}
 
-
-		// fill
+		// ---- scanline fill ----
 		fmt::print("left_x {}, right_x {}\n", left.x, right.x);
 		pixels.push_back(left);
 		int x = left.x + 1;
@@ -450,60 +449,18 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 		}
 
 		if (left.x < 0 || right.x < 0) {
+			fmt::print("### WTF < 0 ###\n");
 			break;
 		}
 		if (left.x > pixel_buffer.width || right.x > pixel_buffer.width) {
+			fmt::print("### WTF > width ###\n");
 			break;
 		}
 		if (right.x == v_right.x && right.y == v_right.y) { break; }
 		if (left.x == v_left.x && left.y == v_left.y) { break; }
-		fmt::print("###4###\n");
+		// fmt::print("###4###\n");
 	} // end
 
-	// if left is swapped, only do right when slow increases
-	// for (;;) {
-	// 	// ---- left ----
-	// 	if (left_swapped) {
-	// 		point_left = {slow_left, fast_left};
-	// 	} 
-	// 	else {
-	// 		point_left = {fast_left, slow_left};
-	// 	}
-	// 	pixels.push_back(point_left);
-	//
-	// 	err_left += delta_slow_left;
-	// 	if (err_left << 1 >= delta_fast_left) {
-	// 		slow_left += step_slow_left;
-	// 		err_left -= delta_fast_left;
-	// 	}
-	// 	fast_left += step_fast_left;
-	//
-	// 	// ---- right ----
-	// 	if (right_swapped) {
-	// 		point_right = {slow_right, fast_right};
-	// 	} 
-	// 	else {
-	// 		point_right = {fast_right, slow_right};
-	// 	}
-	// 	pixels.push_back(point_right);
-	//
-	// 	err_right += delta_slow_right;
-	// 	if (err_right << 1 >= delta_fast_right) {
-	// 		slow_right += step_slow_right;
-	// 		err_right -= delta_fast_right;
-	// 	}
-	// 	fast_right += step_fast_right;
-	//
-	// 	// ---- fill ----
-	// 	point_left.x++;
-	// 	while (point_left.x < point_right.x) {
-	// 		pixels.push_back(point_left);
-	// 		point_left.x++;
-	// 	}
-	// 	if (point_right.x == v_right.x && point_right.y == v_right.y) {
-	// 		break;
-	// 	}
-	// }
 	color_pixels(pixel_buffer, pixels, color);
 }
 
