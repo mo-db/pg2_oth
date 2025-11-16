@@ -73,8 +73,8 @@ void foo_func(App& app) {
 	// bresenham_line2(*app.video.pixel_buffer, *app.video.viewport, 
 	// 							 {108.0, 108.0}, off_mouse, 0xFF0000FF);
 
-	draw_line_wd_new(*app.video.pixel_buffer, *app.video.viewport, 
-								 {108.0, 108.0}, off_mouse, 5.0, 0xFFFF0000);
+	// draw_line_wd_new(*app.video.pixel_buffer, *app.video.viewport, 
+	// 							 {108.0, 108.0}, off_mouse, 5.0, 0xFFFF0000);
 	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, {100.0, 100.0},
               {200.0, 200.0}, mouse, 0xFF0000FF);
 	

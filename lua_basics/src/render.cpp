@@ -381,50 +381,18 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 	int err_left{0};
 	int err_right{0};
 
-	// int step_fast_left{sx_left};
-	// int step_slow_left{sy};
-	// int step_fast_right{sx_right};
-	// int step_slow_right{sy};
-	//
-	// int delta_fast_left{dx_left};
-	// int delta_fast_right{dx_right};
-	// int delta_slow_left{dy};
-	// int delta_slow_right{dy};
-	//
-	// int fast_left{v_start.x};
-	// int slow_left{v_start.y};
-	// int fast_right{v_start.x};
-	// int slow_right{v_start.y};
-
 	// ---- swap ----
 	bool left_swapped{false};
 	bool right_swapped{false};
 	if (dx_left > dy) {
 		left_swapped = true;
-		// step_fast_left = sy;
-		// step_slow_left = sx_left;
-		// delta_fast_left = dy;
-		// delta_slow_left = dx_left;
-		// fast_left = v_start.y;
-		// slow_left = v_start.x;
 	}
 	if (dx_right > dy) {
 		right_swapped = true;
-		// step_fast_right = sy;
-		// step_slow_right = sx_right;
-		// delta_fast_right = dy;
-		// delta_slow_right = dx_right;
-		// fast_right = v_start.y;
-		// slow_right = v_start.x;
 	}
 
 	Pos2 left{v_start};
 	Pos2 right{v_start};
-
-	// Pos2 point_left{};
-	// Pos2 point_right{};
-	//
-	// bool left_slow_inc{false};
 
 	while(1) {
 		// left
@@ -471,12 +439,7 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 			}
 		}
 
-		if (left.x < 0 || right.x < 0) {
-			break;
-		}
-		if (left.x > pixel_buffer.width || right.x > pixel_buffer.width) {
-			break;
-		}
+
 		// fill
 		fmt::print("left_x {}, right_x {}\n", left.x, right.x);
 		pixels.push_back(left);
@@ -486,6 +449,12 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 			pixels.push_back(Pos2{x, left.y});
 		}
 
+		if (left.x < 0 || right.x < 0) {
+			break;
+		}
+		if (left.x > pixel_buffer.width || right.x > pixel_buffer.width) {
+			break;
+		}
 		if (right.x == v_right.x && right.y == v_right.y) { break; }
 		if (left.x == v_left.x && left.y == v_left.y) { break; }
 		fmt::print("###4###\n");
