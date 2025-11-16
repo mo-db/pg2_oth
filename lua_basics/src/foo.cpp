@@ -62,9 +62,22 @@ void foo_func(App& app) {
 		render::draw_rect(*app.video.pixel_buffer, *app.video.viewport, p1, p2, color);
 	}
 
-	draw_wide_line(*app.video.pixel_buffer, *app.video.viewport, 
-		 								Vec2{100, 100}, mouse, 2.0f, 1, 
-										0xFFFF00FF, 0xFF00FFFF);
+	Vec2 off_mouse{mouse.x+8.0f, mouse.y+8.0f};
+	// draw_wide_line(*app.video.pixel_buffer, *app.video.viewport, 
+	// 	 								Vec2{100, 100}, mouse, 2.0f, 1, 
+	// 									0xFFFF00FF, 0xFF00FFFF);
+	// draw_lerp_line(*app.video.pixel_buffer, *app.video.viewport, 
+	// 							 Vec2{150, 100}, mouse, 0xFFFFFFFF);
+	// bresenham_line(*app.video.pixel_buffer, *app.video.viewport, 
+	// 							 {100.0, 100.0}, mouse, 0xFF00FF00);
+	// bresenham_line2(*app.video.pixel_buffer, *app.video.viewport, 
+	// 							 {108.0, 108.0}, off_mouse, 0xFF0000FF);
+
+	draw_line_wd_new(*app.video.pixel_buffer, *app.video.viewport, 
+								 {108.0, 108.0}, off_mouse, 5.0, 0xFFFF0000);
+	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, {100.0, 100.0},
+              {200.0, 200.0}, mouse, 0xFF0000FF);
+	
 	// static float p1_x = 100;
 	// static float p1_y = 100;
 	//

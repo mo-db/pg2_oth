@@ -187,6 +187,500 @@ void draw_wide_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 								Vert2{color2, upper_left}, Vert2{color2, lower_left});
 }
 
+// floating point line algorithm
+void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport, 
+		 								Vec2 p1, Vec2 p2, uint32_t color) {
+	Pos2 start {static_cast<int>(std::lround(p1.x)),
+							static_cast<int>(std::lround(p1.y))};
+	Pos2 end {static_cast<int>(std::lround(p2.x)),
+						static_cast<int>(std::lround(p2.y))};
+
+	std::vector<Pos2> pixels{};
+
+	int delta_x = end.x - start.x;
+	int delta_y = end.y - start.y;
+	int length = std::max(std::abs(delta_x), std::abs(delta_y));
+
+	// normal displacement vector for Chebyshev distance
+  float unit_displacement_x = static_cast<float>(delta_x) / static_cast<float>(length);
+  float unit_displacement_y = static_cast<float>(delta_y) / static_cast<float>(length);
+
+	for (int i = 0; i < length; i++) {
+		// float t = static_cast<float>(i) / static_cast<float>(length);
+
+		// parametric line can be written in two forms:
+		// l(t) = start_point + t * v(start_point, end_point)
+		// float x = t * static_cast<float>(delta_x) + static_cast<float>(start.x);
+		// float y = t * static_cast<float>(delta_y) + static_cast<float>(start.y);
+
+		// l(t) = (1 - t) * start_point + t * end_point
+		// float x = (1.0f - t) * static_cast<float>(start.x) + t * static_cast<float>(end.x);
+		// float y = (1.0f - t) * static_cast<float>(start.y) + t * static_cast<float>(end.y);
+
+		// use normal vector to avoid division every step
+		float x = i * unit_displacement_x + static_cast<float>(start.x);
+		float y = i * unit_displacement_y + static_cast<float>(start.y);
+
+
+		pixels.push_back(Pos2{static_cast<int>(std::lround(x)),
+													static_cast<int>(std::lround(y))});
+	}
+	color_pixels(pixel_buffer, pixels, color);
+}
+
+// my bresenham algorythm, i still don't understand epsilon init value
+void bresenham_line(PixelBuffer& pixel_buffer, Viewport& viewport, 
+		 								Vec2 p0, Vec2 p1, uint32_t color) {
+	// round to nearest integer
+	int x0 = std::lround(p0.x);
+	int y0 = std::lround(p0.y);
+	int x1 = std::lround(p1.x);
+	int y1 = std::lround(p1.y);
+
+	// clamp to screen dimentsion
+	x0 = std::min(std::max(x0, 0), std::min(x0, pixel_buffer.width));
+	y0 = std::min(std::max(y0, 0), std::min(y0, pixel_buffer.height));
+	x1 = std::min(std::max(x1, 0), std::min(x1, pixel_buffer.width));
+	y1 = std::min(std::max(y1, 0), std::min(y1, pixel_buffer.height));
+
+	int dx = std::abs(x1-x0) * 2; // *2 to be able to do /2 later
+	int dy = std::abs(y1-y0) * 2; // *2 to be able to do /2 later
+	int sx = x0 < x1 ? 1 : -1;
+	int sy = y0 < y1 ? 1 : -1;
+
+	std::vector<Pos2> pixels{};
+	pixels.reserve(2 * std::max(std::abs(dx), std::abs(dy)));
+
+	int epsilon{};
+	if (dx > dy) {
+		epsilon = (dy - dx) / 2;
+		for (;;) {
+			pixels.push_back(Pos2{x0, y0});
+			if (x0 == x1 && y0 == y1) { break; }
+			epsilon += dy;
+			if (epsilon << 1 >= dx) {
+				y0 += sy;
+				epsilon -= dx;
+			}
+			x0 += sx;
+		}
+	}
+	else {
+		epsilon = (dx - dy) / 2;
+		for (;;) {
+			pixels.push_back(Pos2{x0, y0});
+			if (x0 == x1 && y0 == y1) { break; }
+			epsilon += dx;
+			if (epsilon << 1 >= dy) {
+				x0 += sx;
+				epsilon -= dy;
+			}
+			y0 += sy;
+		}
+	}
+
+	color_pixels(pixel_buffer, pixels, color);
+}
+
+// zingles bresenham algorithm, no octant calculations needed
+void bresenham_line2(PixelBuffer& pixel_buffer, Viewport& viewport, 
+		 								Vec2 p0, Vec2 p1, uint32_t color) {
+	// round to nearest integer
+	int x0 = std::lround(p0.x);
+	int y0 = std::lround(p0.y);
+	int x1 = std::lround(p1.x);
+	int y1 = std::lround(p1.y);
+
+	// clamp to screen dimentsion
+	x0 = std::min(std::max(x0, 0), std::min(x0, pixel_buffer.width));
+	y0 = std::min(std::max(y0, 0), std::min(y0, pixel_buffer.height));
+	x1 = std::min(std::max(x1, 0), std::min(x1, pixel_buffer.width));
+	y1 = std::min(std::max(y1, 0), std::min(y1, pixel_buffer.height));
+
+	int dx =  abs(x1-x0);
+	int dy = -abs(y1-y0); // ? neg because upper left orientation?
+	int sx = x0 < x1 ? 1 : -1;
+	int sy = y0 < y1 ? 1 : -1;
+
+	// ? Why dx+dy as error init
+	int err = dx+dy, e2; /* error value e_xy */ 
+
+	std::vector<Pos2> pixels{};
+	pixels.reserve(2 * std::max(std::abs(dx), std::abs(dy)));
+
+	for (;;) {  /* loop */
+		pixels.push_back(Pos2{x0, y0});
+		if (x0==x1 && y0==y1) break;
+		if (err << 1 >= dy) { err += dy; x0 += sx; } /* e_xy+e_x > 0 */
+		if (err << 1 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
+	}
+	color_pixels(pixel_buffer, pixels, color);
+}
+
+// top or bottom need to be flat
+void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
+											Pos2 v0, Pos2 v1, Pos2 v2, uint32_t color) {
+	// ---- sort the vertices ----
+	Pos2 v_start{};
+	Pos2 v_left{};
+	Pos2 v_right{};
+	if (v0.y == v1.y) { 
+		v_start = v2; 
+		if (v0.x < v1.x) {
+			v_left = v0;
+			v_right = v1;
+		}
+		else {
+			v_left = v1;
+			v_right = v0;
+		}
+	}
+	else if (v0.y == v2.y) { 
+		v_start = v1;
+		if (v0.x < v2.x) {
+			v_left = v0;
+			v_right = v2;
+		}
+		else {
+			v_left = v2;
+			v_right = v0;
+		}
+	}
+	else if (v1.y == v2.y) {
+		v_start = v0;
+		if (v1.x < v2.x) {
+			v_left = v1;
+			v_right = v2;
+		}
+		else {
+			v_left = v2;
+			v_right = v1;
+		}
+	}
+	else { throw std::runtime_error("Trigon is not flat!"); }
+
+	fmt::print("start: {}, {}\n left: {}, {}\nright: {}, {}\n", v_start.x, v_start.y,
+			v_left.x, v_left.y, v_right.x, v_right.y);
+
+	// ---- Bresenham ----
+	int sx_left = v_start.x < v_left.x ? 1 : -1;
+	int sx_right = v_start.x < v_right.x ? 1 : -1;
+	int sy = v_start.y < v_left.y ? 1 : -1;
+
+	int dx_left = std::abs(v_left.x - v_start.x);
+	int dx_right = std::abs(v_right.x - v_start.x);
+	int dy = std::abs(v_left.y - v_start.y); 
+
+	if (dx_left == 0 || dx_right == 0 || dy == 0) {
+		return;
+	}
+
+	std::vector<Pos2> pixels{};
+	pixels.reserve(dy * (dx_left + dx_right));
+
+	int err_left{0};
+	int err_right{0};
+
+	// int step_fast_left{sx_left};
+	// int step_slow_left{sy};
+	// int step_fast_right{sx_right};
+	// int step_slow_right{sy};
+	//
+	// int delta_fast_left{dx_left};
+	// int delta_fast_right{dx_right};
+	// int delta_slow_left{dy};
+	// int delta_slow_right{dy};
+	//
+	// int fast_left{v_start.x};
+	// int slow_left{v_start.y};
+	// int fast_right{v_start.x};
+	// int slow_right{v_start.y};
+
+	// ---- swap ----
+	bool left_swapped{false};
+	bool right_swapped{false};
+	if (dx_left > dy) {
+		left_swapped = true;
+		// step_fast_left = sy;
+		// step_slow_left = sx_left;
+		// delta_fast_left = dy;
+		// delta_slow_left = dx_left;
+		// fast_left = v_start.y;
+		// slow_left = v_start.x;
+	}
+	if (dx_right > dy) {
+		right_swapped = true;
+		// step_fast_right = sy;
+		// step_slow_right = sx_right;
+		// delta_fast_right = dy;
+		// delta_slow_right = dx_right;
+		// fast_right = v_start.y;
+		// slow_right = v_start.x;
+	}
+
+	Pos2 left{v_start};
+	Pos2 right{v_start};
+
+	// Pos2 point_left{};
+	// Pos2 point_right{};
+	//
+	// bool left_slow_inc{false};
+
+	while(1) {
+		// left
+		if (left_swapped) { // dy is slow
+			while(1) {
+				fmt::print("###1###\n");
+				err_left += dy;
+				left.x += sx_left;
+				if (2*err_left >= dx_left) {
+					left.y += sy;
+					err_left -= dx_left;
+					break;
+				}
+			}
+		}
+		else {
+			err_left += dx_left;
+			left.y += sy;
+			if (2*err_left >= dy) {
+				left.x += sx_left;
+				err_left -= dy;
+			}
+		}
+
+		// right
+		if (right_swapped) { // dy is slow
+			while(1) {
+				fmt::print("###2###\n");
+				err_right += dy;
+				right.x += sx_right;
+				if (2*err_right >= dx_right) {
+					right.y += sy;
+					err_right -= dx_right;
+					break;
+				}
+			}
+		}
+		else {
+			err_right += dx_right;
+			right.y += sy;
+			if (2*err_right >= dy) {
+				right.x += sx_right;
+				err_right -= dy;
+			}
+		}
+
+		if (left.x < 0 || right.x < 0) {
+			break;
+		}
+		if (left.x > pixel_buffer.width || right.x > pixel_buffer.width) {
+			break;
+		}
+		// fill
+		fmt::print("left_x {}, right_x {}\n", left.x, right.x);
+		pixels.push_back(left);
+		int x = left.x + 1;
+		for (; x <= right.x && x < pixel_buffer.width; x++) {
+			// fmt::print("###3###\n");
+			pixels.push_back(Pos2{x, left.y});
+		}
+
+		if (right.x == v_right.x && right.y == v_right.y) { break; }
+		if (left.x == v_left.x && left.y == v_left.y) { break; }
+		fmt::print("###4###\n");
+	} // end
+
+	// if left is swapped, only do right when slow increases
+	// for (;;) {
+	// 	// ---- left ----
+	// 	if (left_swapped) {
+	// 		point_left = {slow_left, fast_left};
+	// 	} 
+	// 	else {
+	// 		point_left = {fast_left, slow_left};
+	// 	}
+	// 	pixels.push_back(point_left);
+	//
+	// 	err_left += delta_slow_left;
+	// 	if (err_left << 1 >= delta_fast_left) {
+	// 		slow_left += step_slow_left;
+	// 		err_left -= delta_fast_left;
+	// 	}
+	// 	fast_left += step_fast_left;
+	//
+	// 	// ---- right ----
+	// 	if (right_swapped) {
+	// 		point_right = {slow_right, fast_right};
+	// 	} 
+	// 	else {
+	// 		point_right = {fast_right, slow_right};
+	// 	}
+	// 	pixels.push_back(point_right);
+	//
+	// 	err_right += delta_slow_right;
+	// 	if (err_right << 1 >= delta_fast_right) {
+	// 		slow_right += step_slow_right;
+	// 		err_right -= delta_fast_right;
+	// 	}
+	// 	fast_right += step_fast_right;
+	//
+	// 	// ---- fill ----
+	// 	point_left.x++;
+	// 	while (point_left.x < point_right.x) {
+	// 		pixels.push_back(point_left);
+	// 		point_left.x++;
+	// 	}
+	// 	if (point_right.x == v_right.x && point_right.y == v_right.y) {
+	// 		break;
+	// 	}
+	// }
+	color_pixels(pixel_buffer, pixels, color);
+}
+
+void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
+                 Vec2 p1, Vec2 p2, uint32_t color) {
+	// sort for smallest y
+  do {
+    Vec2 temp = p0;
+    if (temp.y > p1.y) {
+      p0 = p1;
+      p1 = temp;
+    }
+
+    if (p2.y < p1.y) {
+      temp = p1;
+      p1 = p2;
+      p2 = temp;
+    }
+  } while (p0.y > p1.y || p1.y > p2.y);
+
+	Pos2 pos0{};
+	pos0.x = std::roundl(p0.x);
+	pos0.y = std::roundl(p0.y);
+
+	Pos2 pos1{};
+	pos1.x = std::roundl(p1.x);
+	pos1.y = std::roundl(p1.y);
+
+	Pos2 pos2{};
+	pos2.x = std::roundl(p2.x);
+	pos2.y = std::roundl(p2.y);
+
+
+
+	if (pos0.y == pos1.y || pos0.y == pos2.y || pos1.y == pos2.y) {
+		bresenham_flat_trigon(pixel_buffer, viewport, pos0, pos1, pos2, color);
+		return;
+	}
+
+	// I draw the middle line twice, but this is cheap so why care
+	float k{};
+	if (p2.y != p0.y) {
+		k = (p1.y - p0.y) / (p2.y - p0.y);
+	}
+	Vec2 p3 {p0.x + k * (p2.x - p0.x), p1.y};
+
+	Pos2 pos3{};
+	pos3.x = std::roundl(p3.x);
+	pos3.y = std::roundl(p3.y);
+
+	fmt::print("###\n0: {}, {}\n1: {}, {}\n2: {}, {}\n3: {}, {}\n\n", 
+		pos0.x, pos0.y, pos1.x, pos1.y, pos2.x, pos2.y, pos3.x, pos3.y);
+
+	bresenham_flat_trigon(pixel_buffer, viewport, pos0, pos1, pos3, color);
+	bresenham_flat_trigon(pixel_buffer, viewport, pos1, pos2, pos3, color);
+}
+
+void draw_line_wd_new(PixelBuffer& pixel_buffer, Viewport& viewport,
+											Vec2 start, Vec2 end, float wd, uint32_t color) {
+	Vec2 line = end - start;
+
+	Vec2 a = line.get_orthogonal();
+	a.normalize();
+
+	Vec2 p0 = start + a * (wd/2.0f);
+	Vec2 p1 = p0 - a * wd;
+	Vec2 p2 = p1 + line;
+	Vec2 p3 = p0 + line;
+
+	draw_trigon(pixel_buffer, viewport, p0, p1,p3, color);
+	draw_trigon(pixel_buffer, viewport, p1, p2,p3, color);
+
+}
+void draw_line_wd(PixelBuffer& pixel_buffer, Viewport& viewport,
+											Vec2 start, Vec2 end, float wd, uint32_t color) {
+	// clamp
+
+	Vec2 line = start - end;
+
+	Vec2 a = line.get_orthogonal();
+	a.normalize();
+
+	Vec2 p0 = start + a * (wd/2.0f);
+	Vec2 p1 = p0 - a * wd;
+	Vec2 p2 = p1 + line;
+	Vec2 p3 = p0 + line;
+	Vec2 p4{};
+	Vec2 p5{};
+
+	float k{};
+
+	if (start.y > end.y) {
+		if (p0.y < p1.y) { // p1 -> p4 -> p2, p3 -> p5 -> p0
+			k = (-p0.y + p1.y) / line.y; // p4.y == p0.y
+			p4 = {p1.x + k * line.x, p0.y};
+			p5 = {p3.x + (-k) * line.x, p2.y};
+		}
+		else {
+			k = (-p1.y + p0.y) / line.y; // p4.y == p1.y
+			p4 = {p0.x + k * line.x, p1.y};
+			p5 = {p2.x + (-k) * line.x, p3.y};
+		}
+	}
+	else {
+		if (p0.y < p1.y) {
+			k = (p1.y - p0.y) / line.y; // p4.y == p1.y
+			p4 = {p0.x + k * line.x, p1.y};
+			p5 = {p2.x + (-k) * line.x, p3.y};
+		}
+		else {
+			k = (p0.y - p1.y) / line.y; // p4.y == p0.y
+			p4 = {p1.x + k * line.x, p0.y};
+			p5 = {p3.x + (-k) * line.x, p2.y};
+		}
+	}
+
+	Pos2 pos0{};
+	pos0.x = std::roundl(p0.y);
+	pos0.y = std::roundl(p0.y);
+
+	Pos2 pos1{};
+	pos1.x = std::roundl(p1.x);
+	pos1.y = std::roundl(p1.y);
+
+	Pos2 pos2{};
+	pos2.x = std::roundl(p2.x);
+	pos2.y = std::roundl(p2.y);
+
+	Pos2 pos3{};
+	pos3.x = std::roundl(p3.x);
+	pos3.y = std::roundl(p3.y);
+
+	Pos2 pos4{};
+	pos4.x = std::roundl(p4.x);
+	pos4.y = std::roundl(p4.y);
+
+	Pos2 pos5{};
+	pos5.x = std::roundl(p5.x);
+	pos5.y = std::roundl(p5.y);
+
+	bresenham_flat_trigon(pixel_buffer, viewport, pos0, pos1, pos4, color);
+	bresenham_flat_trigon(pixel_buffer, viewport, pos2, pos3, pos5, color);
+}
+
+
+
 
 Vec2 world_to_screen(Viewport& viewport, const Vec2 &point_world) {
 	Vec2 point_screen = (point_world - viewport.xy_offset) * viewport.scale;

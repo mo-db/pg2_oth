@@ -58,6 +58,17 @@ struct Viewport {
 void draw_wide_line(PixelBuffer& pixel_buffer, Viewport& viewport, 
 		 								Vec2 p1, Vec2 p2, float wd, uint8_t color_mode, 
 										uint32_t color1, uint32_t color2);
+// test
+void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport, 
+		 								Vec2 p1, Vec2 p2, uint32_t color);
+void bresenham_line(PixelBuffer& pixel_buffer, Viewport& viewport, 
+		 								Vec2 p0, Vec2 p1, uint32_t color);
+void bresenham_line2(PixelBuffer& pixel_buffer, Viewport& viewport, 
+		 								Vec2 p0, Vec2 p1, uint32_t color);
+void draw_line_wd_new(PixelBuffer& pixel_buffer, Viewport& viewport, 
+		 								Vec2 start, Vec2 end, float wd, uint32_t color);
+void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
+                 Vec2 p1, Vec2 p2, uint32_t color);
 
 void draw_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vert2 vert_a, Vert2 vert_b, Vert2 vert_c);
 
@@ -65,7 +76,7 @@ void color_pixels(PixelBuffer& pixel_buffer, std::vector<Pos2>& pixels,
 		uint32_t color);
 void draw_rect(PixelBuffer& pixel_buffer, Viewport& viewport, Vec2 p1, Vec2 p2,
 							 uint32_t color);
-void draw_trigon(PixelBuffer* pixel_buffer);
+// void draw_trigon(PixelBuffer* pixel_buffer);
 void draw_trigon_line(PixelBuffer* pixel_buffer);
 // void draw_circle
 // void draw_line
