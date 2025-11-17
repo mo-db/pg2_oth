@@ -54,6 +54,22 @@ bool equal_epsilon(const Vec2 &a, const Vec2 &b) {
 }
 } // namespace vec2
 
+
+IVec2 operator+(const IVec2 &a, const IVec2 &b) {
+	return {a.x + b.x, a.y + b.y};
+}
+IVec2 operator-(const IVec2 &a, const IVec2 &b) {
+	return {a.x - b.x, a.y - b.y};
+}
+IVec2 operator*(const IVec2 &v, int d) {
+	return {v.x * d, v.y * d};
+}
+IVec2 operator*(int d, const IVec2 &v) {
+	return {v.x * d, v.y * d};
+}
+
+
+
 // ---- Line2 ----
 
 Vec2 Line2::get_vector() const {

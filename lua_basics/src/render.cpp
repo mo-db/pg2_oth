@@ -1,17 +1,15 @@
 #include "render.hpp"
 
 namespace render {
-// need to give integer map instead Vec2
-
-void color_pixels(PixelBuffer& pixel_buffer, std::vector<Pos2>& pixels,
+void color_pixels(PixelBuffer& pixel_buffer, std::vector<IVec2>& pixels,
 		uint32_t color) {
 	for (size_t i = 0; i < pixels.size(); i++) {
 		int x = pixels[i].x;
 		int y = pixels[i].y;
 
-		if (x >= 0 && y >= 0 && x < pixel_buffer.width &&
+		if (x >= 0 && y >= 0 &&
+				x < pixel_buffer.width &&
 				y < pixel_buffer.height) {
-
 			pixel_buffer.pixels[x + y * pixel_buffer.width] = color;
 		}
 	}
@@ -19,6 +17,16 @@ void color_pixels(PixelBuffer& pixel_buffer, std::vector<Pos2>& pixels,
 
 void PixelBuffer::clear(uint32_t color) {
 	for (int i = 0; i < width * height; i++) { pixels[i] = color; }
+}
+
+Vec2 world_to_screen(Viewport& viewport, const Vec2 &point_world) {
+	Vec2 point_screen = (point_world - viewport.xy_offset) * viewport.scale;
+	return point_screen;
+}
+
+Vec2 screen_to_world(Viewport& viewport, const Vec2 &point_screen) {
+	Vec2 point_world = (point_screen / viewport.scale) + viewport.xy_offset;
+	return point_world;
 }
 
 void draw_rect(PixelBuffer& pixel_buffer, Viewport& viewport, Vec2 p1, Vec2 p2, uint32_t color) {
@@ -35,7 +43,7 @@ void draw_rect(PixelBuffer& pixel_buffer, Viewport& viewport, Vec2 p1, Vec2 p2, 
 		return;
 	}
 
-	std::vector<Pos2> pixels{};
+	std::vector<IVec2> pixels{};
 	pixels.reserve((x2 - x1) * (y2 - y1));
 	for (int i = y1; i < y2; i++) {
 		for (int j = x1; j < x2; j++) {
@@ -45,153 +53,11 @@ void draw_rect(PixelBuffer& pixel_buffer, Viewport& viewport, Vec2 p1, Vec2 p2, 
 	color_pixels(pixel_buffer, pixels, color);
 }
 
-// triangle
-Bary calc_brycentric_factors(Vec2 vert_a, Vec2 vert_b, Vec2 vert_c, Vec2 point_p) {
-	Vec2 AB = vert_b - vert_a;
-	Vec2 BC = vert_c - vert_b;
-	Vec2 AP = point_p - vert_a;
-
-	Vec2 a = AB;
-	Vec2 b = BC;
-	Vec2 p = AP;
-
-	bool alphax_zero = false;
-	if (core::equal_epsilon(AB.x, 0.0f)) {
-		// switch I. and II.
-		a.x = AB.y;
-		a.y = AB.x;
-		b.x = BC.y;
-		b.y = BC.x;
-		p.x = AP.y;
-		p.y = AP.x;
-		alphax_zero = true;
-	}
-	else if (core::equal_epsilon(AB.y, 0.0f)) {
-		alphax_zero = true;
-	}
-
-	float t{};
-
-	if (!alphax_zero) {
-		// eliminate a.y -> II. * t - I.
-		t = a.y / a.x;
-		b.y -= (b.x * t);
-		p.y -= (p.x * t);
-	}
-
-	// eliminate b.x -> I. * t - II.
-	t = b.x / b.y;
-	p.x -= (p.y * t);
-
-	// TODO: I dont fucking understand why u,v,w are calculated like that
-	// get alpha, beta
-	float alpha = p.x / a.x;
-	float beta = p.y / b.y;
-	float gamma = (1.0f - alpha) - beta;
-
-	float u = 1.0f - alpha;
-	float v = alpha - beta;
-	float w = beta;
-
-
-	Bary bary{u, v, w};
-	// Bary bary{alpha, beta, gamma};
-	return bary;
-}
-
-
-void draw_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vert2 vert_a, Vert2 vert_b, Vert2 vert_c) {
-
-	Bary bary{};
-
-	// get min/max x and min/max y
-	Vec2 va = world_to_screen(viewport, vert_a.position);
-	Vec2 vb = world_to_screen(viewport, vert_b.position);
-	Vec2 vc = world_to_screen(viewport, vert_c.position);
-
-	int min_x = std::roundl(std::min(std::min(va.x, vb.x), vc.x));
-	min_x = std::max(min_x, 0);
-	int min_y = std::roundl(std::min(std::min(va.y, vb.y), vc.y));
-	min_y = std::max(min_y, 0);
-	int max_x = std::roundl(std::max(std::max(va.x, vb.x), vc.x));
-	max_x = std::min(max_x, pixel_buffer.width);
-	int max_y = std::roundl(std::max(std::max(va.y, vb.y), vc.y));
-	max_y = std::min(max_y, pixel_buffer.height);
-
-	std::vector<Pos2> scanline{};
-	bool scanline_active = false;
-	for (int i = min_y; i < max_y; i++) {
-		for (int j = min_x; j < max_x; j++) {
-			bary = calc_brycentric_factors(va, vb, vc, Vec2{(float)j, (float)i});
-
-			if (bary.alpha >= 0.0f &&
-					bary.beta >= 0.0f &&
-					bary.gamma >= 0.0f) {
-				if (scanline_active == false) {
-					scanline_active = true;
-				}
-				scanline.push_back(Pos2{j, i});
-			} else {
-				if (scanline_active) {
-					scanline_active = false;
-					color_pixels(pixel_buffer, scanline, vert_a.color);
-				}
-			}
-		}
-	}
-}
-
-// color-modes:
-// 1. [Def.] gradient over length
-// 2. gradient over width
-// 3. 1 color per triangle
-// 4. 1 color
-void draw_wide_line(PixelBuffer& pixel_buffer, Viewport& viewport, 
-		 								Vec2 p1, Vec2 p2, float wd, uint8_t color_mode, 
-										uint32_t color1, uint32_t color2) {
-	Vec2 p_upper;
-	Vec2 p_lower;
-	if (p1.y > p2.y) {
-		p_upper = p1;
-		p_lower = p2;
-	}
-	else {
-		p_upper = p2;
-		p_lower = p1;
-	}
-
-	Vec2 line = p_upper - p_lower;
-
-	Vec2 orthogonal = line.get_orthogonal();
-	orthogonal.normalize();
-
-	Vec2 upper_left = p_upper + orthogonal * (wd/2.0f);
-	upper_left.x = std::round(upper_left.x);
-	upper_left.y = std::round(upper_left.y);
-
-	Vec2 upper_right = upper_left - orthogonal * wd;
-	upper_right.x = std::round(upper_right.x);
-	upper_right.y = std::round(upper_right.y);
-
-	Vec2 lower_left = upper_left - line;
-	lower_left.x = std::round(lower_left.x);
-	lower_left.y = std::round(lower_left.y);
-
-	Vec2 lower_right = upper_right - line;
-	lower_right.x = std::round(lower_right.x);
-	lower_right.y = std::round(lower_right.y);
-
-	draw_triangle(pixel_buffer, viewport, Vert2{color1, upper_left}, 
-								Vert2{color1, lower_right}, Vert2{color1, upper_right});
-	draw_triangle(pixel_buffer, viewport, Vert2{color2, lower_right}, 
-								Vert2{color2, upper_left}, Vert2{color2, lower_left});
-}
-
 // floating point line algorithm
 void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport, 
 		 								Vec2 p0, Vec2 p1, uint32_t color) {
 
-	std::vector<Pos2> pixels{};
+	std::vector<IVec2> pixels{};
 
 	float dx = std::abs(p1.x - p0.x);
 	float dy = std::abs(p1.y - p0.y);
@@ -218,19 +84,19 @@ void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 		float y = i * unit_displacement_y + p0.y;
 
 
-		pixels.push_back(Pos2{static_cast<int>(std::round(x)),
+		pixels.push_back(IVec2{static_cast<int>(std::round(x)),
 													static_cast<int>(std::round(y))});
 	}
 	color_pixels(pixel_buffer, pixels, color);
 }
 
 void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport, 
-		 								Pos2 v0, Pos2 v1, Pos2 v2, uint32_t color) {
+		 								IVec2 v0, IVec2 v1, IVec2 v2, uint32_t color) {
 
 	// ---- sort the vertices ----
-	Pos2 v_start{};
-	Pos2 v_left{};
-	Pos2 v_right{};
+	IVec2 v_start{};
+	IVec2 v_left{};
+	IVec2 v_right{};
 	if (v0.y == v1.y) { 
 		v_start = v2; 
 		if (v0.x < v1.x) {
@@ -278,7 +144,7 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 	int sy_right = (v_start.y < v_right.y) ? 1 : -1;
 	int length_right = std::max(dx_right, dy_right);
 
-	std::vector<Pos2> pixels{};
+	std::vector<IVec2> pixels{};
 	pixels.reserve(dy_left * (dx_left + dx_right));
 
 	// normal displacement vector for Chebyshev distance
@@ -288,8 +154,8 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
   float x_displace_right = (static_cast<float>(dx_right) / length_right) * sx_right;
   float y_displace_right = (static_cast<float>(dy_right) / length_right) * sy_right;
 
-	Pos2 left{};
-	Pos2 right{};
+	IVec2 left{};
+	IVec2 right{};
 	int last_y{};
 
 	int index_left{};
@@ -316,7 +182,7 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 
 		// fill
 		for (int i = left.x; i <= right.x; i++) {
-			pixels.push_back(Pos2{i, left.y});
+			pixels.push_back(IVec2{i, left.y});
 		}
 
 		if (index_left == length_left || index_right == length_right) { break; }
@@ -344,14 +210,14 @@ void bresenham_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 	int sx = x0 < x1 ? 1 : -1;
 	int sy = y0 < y1 ? 1 : -1;
 
-	std::vector<Pos2> pixels{};
+	std::vector<IVec2> pixels{};
 	pixels.reserve(2 * std::max(std::abs(dx), std::abs(dy)));
 
 	int epsilon{};
 	if (dx > dy) {
 		epsilon = (dy - dx) / 2;
 		for (;;) {
-			pixels.push_back(Pos2{x0, y0});
+			pixels.push_back(IVec2{x0, y0});
 			if (x0 == x1 && y0 == y1) { break; }
 			epsilon += dy;
 			if (epsilon << 1 >= dx) {
@@ -364,7 +230,7 @@ void bresenham_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 	else {
 		epsilon = (dx - dy) / 2;
 		for (;;) {
-			pixels.push_back(Pos2{x0, y0});
+			pixels.push_back(IVec2{x0, y0});
 			if (x0 == x1 && y0 == y1) { break; }
 			epsilon += dx;
 			if (epsilon << 1 >= dy) {
@@ -401,11 +267,11 @@ void bresenham_line2(PixelBuffer& pixel_buffer, Viewport& viewport,
 	// ? Why dx+dy as error init
 	int err = dx+dy, e2; /* error value e_xy */ 
 
-	std::vector<Pos2> pixels{};
+	std::vector<IVec2> pixels{};
 	pixels.reserve(2 * std::max(std::abs(dx), std::abs(dy)));
 
 	for (;;) {  /* loop */
-		pixels.push_back(Pos2{x0, y0});
+		pixels.push_back(IVec2{x0, y0});
 		if (x0==x1 && y0==y1) break;
 		if (err << 1 >= dy) { err += dy; x0 += sx; } /* e_xy+e_x > 0 */
 		if (err << 1 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
@@ -415,11 +281,11 @@ void bresenham_line2(PixelBuffer& pixel_buffer, Viewport& viewport,
 
 // top or bottom need to be flat
 void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
-											Pos2 v0, Pos2 v1, Pos2 v2, uint32_t color) {
+											IVec2 v0, IVec2 v1, IVec2 v2, uint32_t color) {
 	// ---- sort the vertices ----
-	Pos2 v_start{};
-	Pos2 v_left{};
-	Pos2 v_right{};
+	IVec2 v_start{};
+	IVec2 v_left{};
+	IVec2 v_right{};
 	if (v0.y == v1.y) { 
 		v_start = v2; 
 		if (v0.x < v1.x) {
@@ -471,7 +337,7 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 		return;
 	}
 
-	std::vector<Pos2> pixels{};
+	std::vector<IVec2> pixels{};
 	pixels.reserve(dy * (dx_left + dx_right));
 
 	int err_left{0};
@@ -487,8 +353,8 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 		right_swapped = true;
 	}
 
-	Pos2 left{v_start};
-	Pos2 right{v_start};
+	IVec2 left{v_start};
+	IVec2 right{v_start};
 
 	while(1) {
 		// ---- left line ----
@@ -541,7 +407,7 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 		int x = left.x + 1;
 		for (; x <= right.x && x < pixel_buffer.width; x++) {
 			// fmt::print("###3###\n");
-			pixels.push_back(Pos2{x, left.y});
+			pixels.push_back(IVec2{x, left.y});
 		}
 
 		if (left.x < 0 || right.x < 0) {
@@ -582,15 +448,15 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
     }
   } while (p0.y > p1.y || p1.y > p2.y);
 
-	Pos2 pos0{};
+	IVec2 pos0{};
 	pos0.x = std::roundl(p0.x);
 	pos0.y = std::roundl(p0.y);
 
-	Pos2 pos1{};
+	IVec2 pos1{};
 	pos1.x = std::roundl(p1.x);
 	pos1.y = std::roundl(p1.y);
 
-	Pos2 pos2{};
+	IVec2 pos2{};
 	pos2.x = std::roundl(p2.x);
 	pos2.y = std::roundl(p2.y);
 
@@ -612,7 +478,7 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 	}
 	Vec2 p3 {p0.x + k * (p2.x - p0.x), p1.y};
 
-	Pos2 pos3{};
+	IVec2 pos3{};
 	pos3.x = std::roundl(p3.x);
 	pos3.y = std::roundl(p3.y);
 
@@ -628,7 +494,7 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 	}
 }
 
-void draw_line_wd_new(PixelBuffer& pixel_buffer, Viewport& viewport,
+void draw_thick_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 											Vec2 start, Vec2 end, float wd, uint32_t color) {
 	Vec2 line = end - start;
 
@@ -642,166 +508,5 @@ void draw_line_wd_new(PixelBuffer& pixel_buffer, Viewport& viewport,
 
 	draw_trigon(pixel_buffer, viewport, p0, p1,p3, color, 0);
 	draw_trigon(pixel_buffer, viewport, p1, p2,p3, color, 0);
-
-}
-void draw_line_wd(PixelBuffer& pixel_buffer, Viewport& viewport,
-											Vec2 start, Vec2 end, float wd, uint32_t color) {
-	// clamp
-
-	Vec2 line = start - end;
-
-	Vec2 a = line.get_orthogonal();
-	a.normalize();
-
-	Vec2 p0 = start + a * (wd/2.0f);
-	Vec2 p1 = p0 - a * wd;
-	Vec2 p2 = p1 + line;
-	Vec2 p3 = p0 + line;
-	Vec2 p4{};
-	Vec2 p5{};
-
-	float k{};
-
-	if (start.y > end.y) {
-		if (p0.y < p1.y) { // p1 -> p4 -> p2, p3 -> p5 -> p0
-			k = (-p0.y + p1.y) / line.y; // p4.y == p0.y
-			p4 = {p1.x + k * line.x, p0.y};
-			p5 = {p3.x + (-k) * line.x, p2.y};
-		}
-		else {
-			k = (-p1.y + p0.y) / line.y; // p4.y == p1.y
-			p4 = {p0.x + k * line.x, p1.y};
-			p5 = {p2.x + (-k) * line.x, p3.y};
-		}
-	}
-	else {
-		if (p0.y < p1.y) {
-			k = (p1.y - p0.y) / line.y; // p4.y == p1.y
-			p4 = {p0.x + k * line.x, p1.y};
-			p5 = {p2.x + (-k) * line.x, p3.y};
-		}
-		else {
-			k = (p0.y - p1.y) / line.y; // p4.y == p0.y
-			p4 = {p1.x + k * line.x, p0.y};
-			p5 = {p3.x + (-k) * line.x, p2.y};
-		}
-	}
-
-	Pos2 pos0{};
-	pos0.x = std::roundl(p0.y);
-	pos0.y = std::roundl(p0.y);
-
-	Pos2 pos1{};
-	pos1.x = std::roundl(p1.x);
-	pos1.y = std::roundl(p1.y);
-
-	Pos2 pos2{};
-	pos2.x = std::roundl(p2.x);
-	pos2.y = std::roundl(p2.y);
-
-	Pos2 pos3{};
-	pos3.x = std::roundl(p3.x);
-	pos3.y = std::roundl(p3.y);
-
-	Pos2 pos4{};
-	pos4.x = std::roundl(p4.x);
-	pos4.y = std::roundl(p4.y);
-
-	Pos2 pos5{};
-	pos5.x = std::roundl(p5.x);
-	pos5.y = std::roundl(p5.y);
-
-	bresenham_flat_trigon(pixel_buffer, viewport, pos0, pos1, pos4, color);
-	bresenham_flat_trigon(pixel_buffer, viewport, pos2, pos3, pos5, color);
-}
-
-
-// Returns double the signed area but that's fine
-double _edge_function(Vec2 a, Vec2 b, Vec2 c) {
-  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-};
-
-
-// this function needs world to screen convertion 
-void bary_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vec2 vert1_in, Vec2 vert2_in, Vec2 vert3_in, uint32_t color) {
-	Vec2 vert1 = world_to_screen(viewport, vert1_in);
-	Vec2 vert2 = world_to_screen(viewport, vert2_in);
-	Vec2 vert3 = world_to_screen(viewport, vert3_in);
-
-	int max_x = std::max(vert1.x, std::max(vert2.x, vert3.x));
-	int min_x = std::min(vert1.x, std::min(vert2.x, vert3.x));
-	int max_y = std::max(vert1.y, std::max(vert2.y, vert3.y));
-	int min_y = std::min(vert1.y, std::min(vert2.y, vert3.y));
-
-	std::vector<Pos2> pixels{};
-	pixels.reserve(pixel_buffer.width * pixel_buffer.height);
-	
-	for (int x = min_x; x <= max_x; x++) {
-		for (int y = min_y; y <= max_y; y++) {
-
-			Vec2 p{(float)x, (float)y};
-
-			// Calculate our edge function for all three edges of the triangle ABC
-			// the edge function is probably fliped because y=0 is top
-			double ABP = _edge_function(vert1, vert2, p); 
-			double BCP = _edge_function(vert2, vert3, p);
-			double CAP = _edge_function(vert3, vert1, p);
-
-			if (ABP >= 0 && BCP >= 0 && CAP >= 0) {
-				// Point is inside the triangle ABC
-				pixels.push_back(Pos2{(int)std::round(p.x), (int)std::round(p.y)});
-			}
-		}
-	}
-	color_pixels(pixel_buffer, pixels, color);
-}
-
-//// no need to world_to_screen for the lines?
-//// render a line as a mesh with thickness -> maybe gradient, texture, etc
-//// if wd (thickness) < 2, draw a thin line, gradient possible too
-// void wide_line(FrameBuf fb, const Line2 &line, double wd, 
-// 		uint32_t upper_color, uint32_t lower_color) {
-// 	if (wd < 2.0) {
-// 		thin_line(fb, line, upper_color); // meh
-// 		return;
-// 	}
-// 	Vec2 line_vector = line.get_v();
-//
-// 	// the order of vert1 and vert2 is important to get positive area
-// 	Vec2 vert1 = line.p1 + line.get_a().get_norm() * (wd / 2.0);
-// 	Vec2 vert2 = line.p1 - line.get_a().get_norm() * (wd / 2.0);
-//
-// 	// for drawing long thin lines, a higher seg count is more efficient
-// 	// does not matter for plants though
-// 	// if use, implement ratio of thickness to length to determine
-// 	int seg_count = 1;
-// 	double seg_val = 1.0 / seg_count;
-//
-// 	std::vector<Vec2> tri_verts{};
-//
-// 	// fragment line into segments
-// 	for (int i = 0; i <= seg_count; i++) {
-// 		// one segment
-// 		tri_verts.push_back(vert1 + line_vector * seg_val * (double)i);
-// 		tri_verts.push_back(vert2 + line_vector * seg_val * (double)i);
-// 	}
-//
-// 	// draw the triangles
-// 	for (int i = 0; i < seg_count * 2; i += 2) {
-// 		bary_triangle(fb, tri_verts[i+1], tri_verts[i], tri_verts[i+2], upper_color);
-// 		bary_triangle(fb, tri_verts[i+1], tri_verts[i+2], tri_verts[i+3], lower_color);
-// 	}
-// }
-
-
-
-Vec2 world_to_screen(Viewport& viewport, const Vec2 &point_world) {
-	Vec2 point_screen = (point_world - viewport.xy_offset) * viewport.scale;
-	return point_screen;
-}
-
-Vec2 screen_to_world(Viewport& viewport, const Vec2 &point_screen) {
-	Vec2 point_world = (point_screen / viewport.scale) + viewport.xy_offset;
-	return point_world;
 }
 } // namespace render

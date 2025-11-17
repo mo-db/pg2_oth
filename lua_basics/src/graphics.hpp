@@ -20,6 +20,21 @@ Vec2 operator*(float d, const Vec2 &v);
 Vec2 operator/(const Vec2 &v, float d);
 Vec2 operator/(float d, const Vec2 &v);
 
+struct IVec2 {
+  int x{}, y{};
+  IVec2() = default;
+  IVec2(const int x_, const int y_) : x{x_}, y{y_} {}
+  // void normalize();
+	// Vec2 get_orthogonal() const;
+  // float get_mag() const;
+	// float get_angle() const;
+};
+
+IVec2 operator+(const IVec2 &a, const IVec2 &b);
+IVec2 operator-(const IVec2 &a, const IVec2 &b);
+IVec2 operator*(const IVec2 &v, int d);
+IVec2 operator*(int d, const IVec2 &v);
+
 namespace vec2 {
 float dot(const Vec2 &a, const Vec2 &b);
 float distance(const Vec2 &a, const Vec2 &b);
