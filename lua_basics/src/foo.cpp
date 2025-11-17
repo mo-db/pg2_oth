@@ -83,39 +83,45 @@ void foo_func(App& app) {
 	float w = (float)(*app.video.pixel_buffer).width;
 	float h = (float)(*app.video.pixel_buffer).height;
 	
-	Vec2 v0{};
-	Vec2 v1{0.0f, h/16.0f};
+	Vec2 v0{0.0f, 0.0f};
+	Vec2 v1{50.0f, 0.0f};
 
 	const auto start = core::Clock::now();
 	// for (int i = 0; i < 20; i++) {
 	// 	rn0 = SDL_randf();
 	// 	rn1 = SDL_randf();
 	// 	bary_triangle(*app.video.pixel_buffer, *app.video.viewport, 
-	// 								 mouse, v1, {w*rn0, h*rn1}, 0xFFFF0000);
+	// 								 v0, v1, {w*rn0, h*rn1}, 0xFF0000FF);
 	// }
+	for (int i = 0; i < 20; i++) {
+		rn0 = SDL_randf();
+		rn1 = SDL_randf();
+		draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
+									 v0, v1, {w*rn0, h*rn1}, 0xFFFF0000, 1);
+	}
 
-	bary_triangle(*app.video.pixel_buffer, *app.video.viewport, 
-			{0,0}, {100, 0}, mouse, 0xFFFF0000);
+	// bary_triangle(*app.video.pixel_buffer, *app.video.viewport, 
+	// 		v0, v1, mouse, 0xFFFF0000);
 	const auto end = core::Clock::now();
   const auto elapsed = std::chrono::duration_cast<core::ms>(end - start).count();
 
 
 	const auto start_2 = core::Clock::now();
-	// for (int i = 0; i < 20; i++) {
-	// 	rn0 = SDL_randf();
-	// 	rn1 = SDL_randf();
-	// 	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
-	// 								 mouse, v1, {w*rn0, h*rn1}, 0xFFFF0000, 0);
-	// }
+	for (int i = 0; i < 20; i++) {
+		rn0 = SDL_randf();
+		rn1 = SDL_randf();
+		draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
+									 v0, v1, {w*rn0, h*rn1}, 0xFFFF0000, 0);
+	}
 
-	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
-							{300,0}, {800, 0}, mouse, 0xFF0000FF, 0);
+	// draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
+	// 						{300,0}, {800, 0}, mouse, 0xFF0000FF, 0);
 
 
-	int ww;
-	int hw;
-	SDL_GetWindowSizeInPixels(app.window, &ww, &hw);
-	fmt::print("w {}, h {}\n", ww, hw);
+	// int ww;
+	// int hw;
+	// SDL_GetWindowSizeInPixels(app.window, &ww, &hw);
+	// fmt::print("w {}, h {}\n", ww, hw);
 
 	const auto end_2 = core::Clock::now();
   const auto elapsed_2 = std::chrono::duration_cast<core::ms>(end_2 - start_2).count();
