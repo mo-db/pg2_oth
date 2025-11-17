@@ -225,22 +225,61 @@ void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 }
 
 void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport, 
-		 								Vec2 p0, Vec2 p1, Vec2 p2, uint32_t color) {
+		 								Pos2 v0, Pos2 v1, Pos2 v2, uint32_t color) {
 
-	std::vector<Pos2> pixels{};
+	// ---- sort the vertices ----
+	Pos2 v_start{};
+	Pos2 v_left{};
+	Pos2 v_right{};
+	if (v0.y == v1.y) { 
+		v_start = v2; 
+		if (v0.x < v1.x) {
+			v_left = v0;
+			v_right = v1;
+		}
+		else {
+			v_left = v1;
+			v_right = v0;
+		}
+	}
+	else if (v0.y == v2.y) { 
+		v_start = v1;
+		if (v0.x < v2.x) {
+			v_left = v0;
+			v_right = v2;
+		}
+		else {
+			v_left = v2;
+			v_right = v0;
+		}
+	}
+	else if (v1.y == v2.y) {
+		v_start = v0;
+		if (v1.x < v2.x) {
+			v_left = v1;
+			v_right = v2;
+		}
+		else {
+			v_left = v2;
+			v_right = v1;
+		}
+	}
+	else { throw std::runtime_error("Trigon is not flat!"); }
 
-
-	int dx_left = std::abs(p1.x - p0.x);
-	int dy_left = std::abs(p1.y - p0.y);
-	int sx_left = (p0.x < p1.x) ? 1 : -1;
-	int sy_left = (p0.y < p1.y) ? 1 : -1;
+	int dx_left = std::abs(v_left.x - v_start.x);
+	int dy_left = std::abs(v_left.y - v_start.y);
+	int sx_left = (v_start.x < v_left.x) ? 1 : -1;
+	int sy_left = (v_start.y < v_left.y) ? 1 : -1;
 	int length_left = std::max(dx_left, dy_left);
 
-	int dx_right = std::abs(p1.x - p0.x);
-	int dy_right = std::abs(p1.y - p0.y);
-	int sx_right = (p0.x < p1.x) ? 1 : -1;
-	int sy_right = (p0.y < p1.y) ? 1 : -1;
+	int dx_right = std::abs(v_right.x - v_start.x);
+	int dy_right = std::abs(v_right.y - v_start.y);
+	int sx_right = (v_start.x < v_right.x) ? 1 : -1;
+	int sy_right = (v_start.y < v_right.y) ? 1 : -1;
 	int length_right = std::max(dx_right, dy_right);
+
+	std::vector<Pos2> pixels{};
+	pixels.reserve(dy_left * (dx_left + dx_right));
 
 	// normal displacement vector for Chebyshev distance
   float x_displace_left = (static_cast<float>(dx_left) / length_left) * sx_left;
@@ -260,8 +299,8 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 		// left
 		last_y = left.y;
 		while (left.y == last_y) {
-			left.x = static_cast<int>(std::round(index_left * x_displace_left + p0.x));
-			left.y = static_cast<int>(std::round(index_left * y_displace_left + p0.y));
+			left.x = static_cast<int>(std::round(index_left * x_displace_left + v_start.x));
+			left.y = static_cast<int>(std::round(index_left * y_displace_left + v_start.y));
 			if (index_left >= length_left) { break; }
 			index_left++;
 		}
@@ -269,8 +308,8 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 		// right
 		last_y = right.y;
 		while (right.y == last_y) {
-			right.x = static_cast<int>(std::round(index_right * x_displace_right + p0.x));
-			right.y = static_cast<int>(std::round(index_right * y_displace_right + p0.y));
+			right.x = static_cast<int>(std::round(index_right * x_displace_right + v_start.x));
+			right.y = static_cast<int>(std::round(index_right * y_displace_right + v_start.y));
 			if (index_right >= length_right) { break; }
 			index_right++;
 		}
@@ -522,7 +561,12 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 }
 
 void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
-                 Vec2 p1, Vec2 p2, uint32_t color) {
+                 Vec2 p1, Vec2 p2, uint32_t color, uint8_t impl) {
+
+	p0 = world_to_screen(viewport, p0);
+	p1 = world_to_screen(viewport, p1);
+	p2 = world_to_screen(viewport, p2);
+
 	// sort for smallest y
   do {
     Vec2 temp = p0;
@@ -553,7 +597,11 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 
 
 	if (pos0.y == pos1.y || pos0.y == pos2.y || pos1.y == pos2.y) {
-		bresenham_flat_trigon(pixel_buffer, viewport, pos0, pos1, pos2, color);
+		if (impl == 0) {
+			draw_lerp_line_trigon(pixel_buffer, viewport, pos0, pos1, pos2, color);
+		} else {
+			bresenham_flat_trigon(pixel_buffer, viewport, pos0, pos1, pos2, color);
+		}
 		return;
 	}
 
@@ -571,8 +619,13 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 	// fmt::print("###\n0: {}, {}\n1: {}, {}\n2: {}, {}\n3: {}, {}\n\n", 
 	// 	pos0.x, pos0.y, pos1.x, pos1.y, pos2.x, pos2.y, pos3.x, pos3.y);
 
-	bresenham_flat_trigon(pixel_buffer, viewport, pos0, pos1, pos3, color);
-	bresenham_flat_trigon(pixel_buffer, viewport, pos1, pos2, pos3, color);
+	if (impl == 0) {
+		draw_lerp_line_trigon(pixel_buffer, viewport, pos0, pos1, pos3, color);
+		draw_lerp_line_trigon(pixel_buffer, viewport, pos1, pos2, pos3, color);
+	} else {
+		bresenham_flat_trigon(pixel_buffer, viewport, pos0, pos1, pos3, color);
+		bresenham_flat_trigon(pixel_buffer, viewport, pos1, pos2, pos3, color);
+	}
 }
 
 void draw_line_wd_new(PixelBuffer& pixel_buffer, Viewport& viewport,
@@ -587,8 +640,8 @@ void draw_line_wd_new(PixelBuffer& pixel_buffer, Viewport& viewport,
 	Vec2 p2 = p1 + line;
 	Vec2 p3 = p0 + line;
 
-	draw_trigon(pixel_buffer, viewport, p0, p1,p3, color);
-	draw_trigon(pixel_buffer, viewport, p1, p2,p3, color);
+	draw_trigon(pixel_buffer, viewport, p0, p1,p3, color, 0);
+	draw_trigon(pixel_buffer, viewport, p1, p2,p3, color, 0);
 
 }
 void draw_line_wd(PixelBuffer& pixel_buffer, Viewport& viewport,
@@ -662,6 +715,83 @@ void draw_line_wd(PixelBuffer& pixel_buffer, Viewport& viewport,
 	bresenham_flat_trigon(pixel_buffer, viewport, pos2, pos3, pos5, color);
 }
 
+
+// Returns double the signed area but that's fine
+double _edge_function(Vec2 a, Vec2 b, Vec2 c) {
+  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+};
+
+
+// this function needs world to screen convertion 
+void bary_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vec2 vert1_in, Vec2 vert2_in, Vec2 vert3_in, uint32_t color) {
+	Vec2 vert1 = world_to_screen(viewport, vert1_in);
+	Vec2 vert2 = world_to_screen(viewport, vert2_in);
+	Vec2 vert3 = world_to_screen(viewport, vert3_in);
+
+	int max_x = std::max(vert1.x, std::max(vert2.x, vert3.x));
+	int min_x = std::min(vert1.x, std::min(vert2.x, vert3.x));
+	int max_y = std::max(vert1.y, std::max(vert2.y, vert3.y));
+	int min_y = std::min(vert1.y, std::min(vert2.y, vert3.y));
+
+	std::vector<Pos2> pixels{};
+	pixels.reserve(pixel_buffer.width * pixel_buffer.height);
+	
+	for (int x = min_x; x <= max_x; x++) {
+		for (int y = min_y; y <= max_y; y++) {
+
+			Vec2 p{(float)x, (float)y};
+
+			// Calculate our edge function for all three edges of the triangle ABC
+			// the edge function is probably fliped because y=0 is top
+			double ABP = _edge_function(vert1, vert2, p); 
+			double BCP = _edge_function(vert2, vert3, p);
+			double CAP = _edge_function(vert3, vert1, p);
+
+			if (ABP >= 0 && BCP >= 0 && CAP >= 0) {
+				// Point is inside the triangle ABC
+				pixels.push_back(Pos2{(int)std::round(p.x), (int)std::round(p.y)});
+			}
+		}
+	}
+	color_pixels(pixel_buffer, pixels, color);
+}
+
+//// no need to world_to_screen for the lines?
+//// render a line as a mesh with thickness -> maybe gradient, texture, etc
+//// if wd (thickness) < 2, draw a thin line, gradient possible too
+// void wide_line(FrameBuf fb, const Line2 &line, double wd, 
+// 		uint32_t upper_color, uint32_t lower_color) {
+// 	if (wd < 2.0) {
+// 		thin_line(fb, line, upper_color); // meh
+// 		return;
+// 	}
+// 	Vec2 line_vector = line.get_v();
+//
+// 	// the order of vert1 and vert2 is important to get positive area
+// 	Vec2 vert1 = line.p1 + line.get_a().get_norm() * (wd / 2.0);
+// 	Vec2 vert2 = line.p1 - line.get_a().get_norm() * (wd / 2.0);
+//
+// 	// for drawing long thin lines, a higher seg count is more efficient
+// 	// does not matter for plants though
+// 	// if use, implement ratio of thickness to length to determine
+// 	int seg_count = 1;
+// 	double seg_val = 1.0 / seg_count;
+//
+// 	std::vector<Vec2> tri_verts{};
+//
+// 	// fragment line into segments
+// 	for (int i = 0; i <= seg_count; i++) {
+// 		// one segment
+// 		tri_verts.push_back(vert1 + line_vector * seg_val * (double)i);
+// 		tri_verts.push_back(vert2 + line_vector * seg_val * (double)i);
+// 	}
+//
+// 	// draw the triangles
+// 	for (int i = 0; i < seg_count * 2; i += 2) {
+// 		bary_triangle(fb, tri_verts[i+1], tri_verts[i], tri_verts[i+2], upper_color);
+// 		bary_triangle(fb, tri_verts[i+1], tri_verts[i+2], tri_verts[i+3], lower_color);
+// 	}
+// }
 
 
 

@@ -11,7 +11,7 @@ int main() {
 		// maybe do the init in the constructor?
 		// also maybe include the custom pixel buffer?
 		App app;
-		if (!app_init(app, 640, 480)) { return 1; }
+		if (!app_init(app, 1920, 1080)) { return 1; }
 
     // render::PixelBuffer window_buffer{app.width * app.pixel_density,
 																			// app.height * app.pixel_density};

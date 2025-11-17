@@ -73,10 +73,58 @@ void foo_func(App& app) {
 	// bresenham_line2(*app.video.pixel_buffer, *app.video.viewport, 
 	// 							 {108.0, 108.0}, off_mouse, 0xFF0000FF);
 
-	// draw_line_wd_new(*app.video.pixel_buffer, *app.video.viewport, 
-	// 							 {108.0, 108.0}, off_mouse, 5.0, 0xFFFF0000);
-	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, {100.0, 100.0},
-              {200.0, 200.0}, mouse, 0xFF0000FF);
+
+
+	float rn0 = SDL_randf();
+	float rn1 = SDL_randf();
+	// float rn2 = SDL_randf();
+
+
+	float w = (float)(*app.video.pixel_buffer).width;
+	float h = (float)(*app.video.pixel_buffer).height;
+	
+	Vec2 v0{};
+	Vec2 v1{0.0f, h/16.0f};
+
+	const auto start = core::Clock::now();
+	// for (int i = 0; i < 20; i++) {
+	// 	rn0 = SDL_randf();
+	// 	rn1 = SDL_randf();
+	// 	bary_triangle(*app.video.pixel_buffer, *app.video.viewport, 
+	// 								 mouse, v1, {w*rn0, h*rn1}, 0xFFFF0000);
+	// }
+
+	bary_triangle(*app.video.pixel_buffer, *app.video.viewport, 
+			{0,0}, {100, 0}, mouse, 0xFFFF0000);
+	const auto end = core::Clock::now();
+  const auto elapsed = std::chrono::duration_cast<core::ms>(end - start).count();
+
+
+	const auto start_2 = core::Clock::now();
+	// for (int i = 0; i < 20; i++) {
+	// 	rn0 = SDL_randf();
+	// 	rn1 = SDL_randf();
+	// 	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
+	// 								 mouse, v1, {w*rn0, h*rn1}, 0xFFFF0000, 0);
+	// }
+
+	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
+							{300,0}, {800, 0}, mouse, 0xFF0000FF, 0);
+
+
+	int ww;
+	int hw;
+	SDL_GetWindowSizeInPixels(app.window, &ww, &hw);
+	fmt::print("w {}, h {}\n", ww, hw);
+
+	const auto end_2 = core::Clock::now();
+  const auto elapsed_2 = std::chrono::duration_cast<core::ms>(end_2 - start_2).count();
+	fmt::print("time bary: \n{}\ntime my\n{}\n", elapsed, elapsed_2);
+
+	// render::draw_rect(*app.video.pixel_buffer, *app.video.viewport, {0.0, 0.0}, {w,h}, color);
+
+	// draw_trigon(*app.video.pixel_buffer, *app.video.viewport, {100.0, 100.0},
+	//              {200.0, 200.0}, mouse, 0xFF0000FF);
 	
 	// static float p1_x = 100;
 	// static float p1_y = 100;

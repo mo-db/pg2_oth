@@ -20,13 +20,14 @@ bool app_init(App &app, int width, int height) {
   SDL_SetWindowPosition(app.window, SDL_WINDOWPOS_CENTERED,
                         SDL_WINDOWPOS_CENTERED);
 
-  app.width = width;
-  app.height = height;
+	SDL_GetWindowSizeInPixels(app.window, &app.width, &app.height);
+  // app.width = width;
+  // app.height = height;
 	app.pixel_density = 1;
 
   app.window_texture =
       SDL_CreateTexture(app.renderer, SDL_PIXELFORMAT_RGBA32,
-                        SDL_TEXTUREACCESS_TARGET, width, height);
+                        SDL_TEXTUREACCESS_TARGET, app.width, app.height);
 
 	// test
 	app.video.pixel_buffer = std::unique_ptr<render::PixelBuffer>(
@@ -57,6 +58,9 @@ void process_events(State& state) {
 void query_input(State& state) {
 	SDL_MouseButtonFlags mouse_flags =
 		SDL_GetMouseState(&state.input.mouse.x, &state.input.mouse.y);
+	state.input.mouse.x *= 2;
+	state.input.mouse.y *= 2;
+
 	state.input.mouse_left.down(mouse_flags & SDL_BUTTON_LMASK);
 	state.input.mouse_mid.down(mouse_flags & SDL_BUTTON_MMASK);
 	state.input.mouse_right.down(mouse_flags & SDL_BUTTON_RMASK);

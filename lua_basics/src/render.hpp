@@ -67,8 +67,17 @@ void bresenham_line2(PixelBuffer& pixel_buffer, Viewport& viewport,
 		 								Vec2 p0, Vec2 p1, uint32_t color);
 void draw_line_wd_new(PixelBuffer& pixel_buffer, Viewport& viewport, 
 		 								Vec2 start, Vec2 end, float wd, uint32_t color);
+void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport, 
+		 								Pos2 v0, Pos2 v1, Pos2 v2, uint32_t color);
+
+
+// trigon funcs
+void bary_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vec2 vert1_in, Vec2 vert2_in, Vec2 vert3_in, uint32_t color);
 void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
-                 Vec2 p1, Vec2 p2, uint32_t color);
+                 Vec2 p1, Vec2 p2, uint32_t color, uint8_t impl);
+
+
+
 
 void draw_triangle(PixelBuffer& pixel_buffer, Viewport& viewport, Vert2 vert_a, Vert2 vert_b, Vert2 vert_c);
 

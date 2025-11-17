@@ -15,5 +15,9 @@ namespace core {
 constexpr double pi = std::numbers::pi;
 constexpr double epsilon = 1e-6;
 
+using Clock = std::chrono::steady_clock;
+using TimePoint = std::chrono::time_point<Clock>;
+using ms = std::chrono::duration<double, std::milli>;
+
 bool equal_epsilon(double x, double y);
-} // namespace gk
+} // namespace core
