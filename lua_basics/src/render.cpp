@@ -189,21 +189,17 @@ void draw_wide_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 
 // floating point line algorithm
 void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport, 
-		 								Vec2 p1, Vec2 p2, uint32_t color) {
-	Pos2 start {static_cast<int>(std::lround(p1.x)),
-							static_cast<int>(std::lround(p1.y))};
-	Pos2 end {static_cast<int>(std::lround(p2.x)),
-						static_cast<int>(std::lround(p2.y))};
+		 								Vec2 p0, Vec2 p1, uint32_t color) {
 
 	std::vector<Pos2> pixels{};
 
-	int delta_x = end.x - start.x;
-	int delta_y = end.y - start.y;
-	int length = std::max(std::abs(delta_x), std::abs(delta_y));
+	float dx = std::abs(p1.x - p0.x);
+	float dy = std::abs(p1.y - p0.y);
+	float length = std::max(dx, dy);
 
 	// normal displacement vector for Chebyshev distance
-  float unit_displacement_x = static_cast<float>(delta_x) / static_cast<float>(length);
-  float unit_displacement_y = static_cast<float>(delta_y) / static_cast<float>(length);
+  float unit_displacement_x = dx / length;
+  float unit_displacement_y = dy / length;
 
 	for (int i = 0; i < length; i++) {
 		// float t = static_cast<float>(i) / static_cast<float>(length);
@@ -218,12 +214,73 @@ void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 		// float y = (1.0f - t) * static_cast<float>(start.y) + t * static_cast<float>(end.y);
 
 		// use normal vector to avoid division every step
-		float x = i * unit_displacement_x + static_cast<float>(start.x);
-		float y = i * unit_displacement_y + static_cast<float>(start.y);
+		float x = i * unit_displacement_x + p0.x;
+		float y = i * unit_displacement_y + p0.y;
 
 
-		pixels.push_back(Pos2{static_cast<int>(std::lround(x)),
-													static_cast<int>(std::lround(y))});
+		pixels.push_back(Pos2{static_cast<int>(std::round(x)),
+													static_cast<int>(std::round(y))});
+	}
+	color_pixels(pixel_buffer, pixels, color);
+}
+
+void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport, 
+		 								Vec2 p0, Vec2 p1, Vec2 p2, uint32_t color) {
+
+	std::vector<Pos2> pixels{};
+
+
+	int dx_left = std::abs(p1.x - p0.x);
+	int dy_left = std::abs(p1.y - p0.y);
+	int sx_left = (p0.x < p1.x) ? 1 : -1;
+	int sy_left = (p0.y < p1.y) ? 1 : -1;
+	int length_left = std::max(dx_left, dy_left);
+
+	int dx_right = std::abs(p1.x - p0.x);
+	int dy_right = std::abs(p1.y - p0.y);
+	int sx_right = (p0.x < p1.x) ? 1 : -1;
+	int sy_right = (p0.y < p1.y) ? 1 : -1;
+	int length_right = std::max(dx_right, dy_right);
+
+	// normal displacement vector for Chebyshev distance
+  float x_displace_left = (static_cast<float>(dx_left) / length_left) * sx_left;
+  float y_displace_left = (static_cast<float>(dy_left) / length_left) * sy_left;
+
+  float x_displace_right = (static_cast<float>(dx_right) / length_right) * sx_right;
+  float y_displace_right = (static_cast<float>(dy_right) / length_right) * sy_right;
+
+	Pos2 left{};
+	Pos2 right{};
+	int last_y{};
+
+	int index_left{};
+	int index_right{};
+
+	for (;;) {
+		// left
+		last_y = left.y;
+		while (left.y == last_y) {
+			left.x = static_cast<int>(std::round(index_left * x_displace_left + p0.x));
+			left.y = static_cast<int>(std::round(index_left * y_displace_left + p0.y));
+			if (index_left >= length_left) { break; }
+			index_left++;
+		}
+
+		// right
+		last_y = right.y;
+		while (right.y == last_y) {
+			right.x = static_cast<int>(std::round(index_right * x_displace_right + p0.x));
+			right.y = static_cast<int>(std::round(index_right * y_displace_right + p0.y));
+			if (index_right >= length_right) { break; }
+			index_right++;
+		}
+
+		// fill
+		for (int i = left.x; i <= right.x; i++) {
+			pixels.push_back(Pos2{i, left.y});
+		}
+
+		if (index_left == length_left || index_right == length_right) { break; }
 	}
 	color_pixels(pixel_buffer, pixels, color);
 }
@@ -359,8 +416,8 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 	}
 	else { throw std::runtime_error("Trigon is not flat!"); }
 
-	fmt::print("start: {}, {}\n left: {}, {}\nright: {}, {}\n", v_start.x, v_start.y,
-			v_left.x, v_left.y, v_right.x, v_right.y);
+	// fmt::print("start: {}, {}\n left: {}, {}\nright: {}, {}\n", v_start.x, v_start.y,
+	// 		v_left.x, v_left.y, v_right.x, v_right.y);
 
 	// ---- Bresenham ----
 	int sx_left = v_start.x < v_left.x ? 1 : -1;
@@ -440,7 +497,7 @@ void bresenham_flat_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 		}
 
 		// ---- scanline fill ----
-		fmt::print("left_x {}, right_x {}\n", left.x, right.x);
+		// fmt::print("left_x {}, right_x {}\n", left.x, right.x);
 		pixels.push_back(left);
 		int x = left.x + 1;
 		for (; x <= right.x && x < pixel_buffer.width; x++) {
@@ -511,8 +568,8 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 	pos3.x = std::roundl(p3.x);
 	pos3.y = std::roundl(p3.y);
 
-	fmt::print("###\n0: {}, {}\n1: {}, {}\n2: {}, {}\n3: {}, {}\n\n", 
-		pos0.x, pos0.y, pos1.x, pos1.y, pos2.x, pos2.y, pos3.x, pos3.y);
+	// fmt::print("###\n0: {}, {}\n1: {}, {}\n2: {}, {}\n3: {}, {}\n\n", 
+	// 	pos0.x, pos0.y, pos1.x, pos1.y, pos2.x, pos2.y, pos3.x, pos3.y);
 
 	bresenham_flat_trigon(pixel_buffer, viewport, pos0, pos1, pos3, color);
 	bresenham_flat_trigon(pixel_buffer, viewport, pos1, pos2, pos3, color);
