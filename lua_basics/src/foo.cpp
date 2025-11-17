@@ -93,7 +93,7 @@ void foo_func(App& app) {
 	// 	bary_triangle(*app.video.pixel_buffer, *app.video.viewport, 
 	// 								 v0, v1, {w*rn0, h*rn1}, 0xFF0000FF);
 	// }
-	for (int i = 0; i < 20; i++) {
+	for (int i = 0; i < 50; i++) {
 		rn0 = SDL_randf();
 		rn1 = SDL_randf();
 		draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
@@ -107,7 +107,7 @@ void foo_func(App& app) {
 
 
 	const auto start_2 = core::Clock::now();
-	for (int i = 0; i < 20; i++) {
+	for (int i = 0; i < 50; i++) {
 		rn0 = SDL_randf();
 		rn1 = SDL_randf();
 		draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
