@@ -221,8 +221,8 @@ void draw_lerp_line_trigon2(PixelBuffer &pixel_buffer, Viewport &viewport,
   float x_displace_right = (static_cast<float>(dx_right) / length_right) * sx_right;
   float y_displace_right = (static_cast<float>(dy_right) / length_right) * sy_right;
 
-	IVec2 left{};
-	IVec2 right{};
+	IVec2 left{v_start};
+	IVec2 right{v_start};
 	int last_y{};
 
 	int index_left{};
@@ -251,8 +251,9 @@ void draw_lerp_line_trigon2(PixelBuffer &pixel_buffer, Viewport &viewport,
 		for (int i = left.x; i <= right.x; i++) {
 			if (switched_xy) {
 				pixels.push_back(IVec2{left.y, i});
+			} else {
+				pixels.push_back(IVec2{i, left.y});
 			}
-			pixels.push_back(IVec2{i, left.y});
 		}
 
 		if (index_left == length_left || index_right == length_right) { break; }
