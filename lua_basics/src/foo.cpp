@@ -85,6 +85,7 @@ void foo_func(App& app) {
 	
 	Vec2 v0{300.0f, 300.0f};
 	Vec2 v1{700.0f, 400.0f};
+	Vec2 v2{750.0f, 600.0f};
 
 	const auto start = core::Clock::now();
 	// for (int i = 0; i < 20; i++) {
@@ -115,7 +116,7 @@ void foo_func(App& app) {
 	// }
 
 	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
-							v0, v1, mouse, 0xFF0000FF, 0);
+							v0, v1, mouse, 0x550000FF, 0);
 
 
 	// int ww;

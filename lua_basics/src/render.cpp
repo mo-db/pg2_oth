@@ -138,13 +138,29 @@ void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 	}
 	color_pixels(pixel_buffer, pixels, color);
 }
+void draw_lerp_line_trigon2(PixelBuffer &pixel_buffer, Viewport &viewport,
+                            IVec2 v0, IVec2 v1, IVec2 v2, uint32_t color) {
+  bool switched_xy{false};
+  if (v0.x == v1.x || v0.x == v2.x || v1.x == v2.x) {
+		switched_xy = true;
+		int temp = v0.x;
+		v0.x = v0.y;
+		v0.y = temp;
+		temp = v1.x;
+		v1.x = v1.y;
+		v1.y = temp;
+		temp = v2.x;
+		v2.x = v2.y;
+		v2.y = temp;
+  } else if (v0.y == v1.y || v0.y == v2.y || v1.y == v2.y) {
+		// do nothing
+  } else {
+    throw std::runtime_error("Trigon is not flat!");
+  }
+	fmt::print("v0: {}, {}\nv1: {}, {}\nv2 {}, {}\n", v0.x, v0.y, v1.x, v1.y,
+			v2.x, v2.y);
+	fmt::print("switched: {}\n", switched_xy);
 
-// only works with a ones sinde flat triangle
-// TODO: scanline vertical or horizontal depending on what side is flat
-void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport, 
-		 								IVec2 v0, IVec2 v1, IVec2 v2, uint32_t color) {
-
-	// find the flat side
 	// ---- sort the vertices ----
 	IVec2 v_start{};
 	IVec2 v_left{};
@@ -182,7 +198,6 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 			v_right = v1;
 		}
 	}
-	else { throw std::runtime_error("Trigon is not flat!"); }
 
 	int dx_left = std::abs(v_left.x - v_start.x);
 	int dy_left = std::abs(v_left.y - v_start.y);
@@ -206,81 +221,6 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
   float x_displace_right = (static_cast<float>(dx_right) / length_right) * sx_right;
   float y_displace_right = (static_cast<float>(dy_right) / length_right) * sy_right;
 
-	// y: max(std::min(pixel_buffer.height, v_start.y), 0)
-
-	// ---- start
-	int min_x = 100;
-	int max_x = pixel_buffer.width-100;
-	int min_y = 100;
-	int max_y = pixel_buffer.height-100;
-
-	int clamp_start_x = std::max(std::min(max_x, v_start.x), min_x);
-	int clamp_start_y = std::max(std::min(max_y, v_start.y), min_y);
-
-	Vec2 clamp_start_left = v_start.get_Vec2();
-	// if (clamp_start_y != v_start.y) {
-	// 	float k_left = (clamp_start_y - v_start.y) / y_displace_left;
-	// 	float x = k_left * x_displace_left + v_start.x;
-	//
-	// 	clamp_start_left.x = std::max(std::min(static_cast<float>(max_x), x),
-	// 																static_cast<float>(min_x));
-	// 	clamp_start_left.y = clamp_start_y;
-	// }
-	// if (clamp_start_x != v_start.x) {
-	// 	float k_left = (clamp_start_x - v_start.x) / x_displace_left;
-	// 	float y = k_left * y_displace_left + v_start.y;
-	//
-	// 	clamp_start_left.y = std::max(std::min(static_cast<float>(max_y), y),
-	// 			static_cast<float>(min_y));
-	// 	clamp_start_left.x = clamp_start_x;
-	// }
-
-	Vec2 clamp_start_right = v_start.get_Vec2();
-	// if (clamp_start_y != v_start.y) {
-	// 	float k_right = (clamp_start_y - v_start.y) / y_displace_right;
-	// 	float x = k_right * x_displace_right + v_start.x;
-	//
-	// 	clamp_start_right.x = std::max(std::min(static_cast<float>(max_x), x),
-	// 																 static_cast<float>(min_x));
-	// 	clamp_start_right.y = clamp_start_y;
-	// }
-	// if (clamp_start_x != v_start.x) {
-	// 	float k_right = (clamp_start_x - v_start.x) / x_displace_right;
-	// 	float y = k_right * y_displace_right + v_start.y;
-	//
-	// 	clamp_start_right.y = std::max(std::min(static_cast<float>(max_y), y),
-	// 			static_cast<float>(min_y));
-	// 	clamp_start_right.x = clamp_start_x;
-	// }
-
-
-	Vec2 clamp_end_left = v_left.get_Vec2();
-	Vec2 clamp_end_right = v_right.get_Vec2();
-
-	// ...
-
-	IVec2 start_left = clamp_start_left.get_IVec2();
-	IVec2 start_right = clamp_start_right.get_IVec2();
-	IVec2 end_left = clamp_end_left.get_IVec2();
-	IVec2 end_right = clamp_end_right.get_IVec2();
-
-	dx_left = std::abs(end_left.x - start_left.x);
-	dy_left = std::abs(end_left.y - start_left.y);
-	sx_left = (start_left.x < end_left.x) ? 1 : -1;
-	sy_left = (start_left.y < end_left.y) ? 1 : -1;
-	length_left = std::max(dx_left, dy_left);
-
-	dx_right = std::abs(end_right.x - start_right.x);
-	dy_right = std::abs(end_right.y - start_right.y);
-	sx_right = (start_right.x < end_right.x) ? 1 : -1;
-	sy_right = (start_right.y < end_right.y) ? 1 : -1;
-	length_right = std::max(dx_right, dy_right);
-
-  x_displace_left = (static_cast<float>(dx_left) / length_left) * sx_left;
-  y_displace_left = (static_cast<float>(dy_left) / length_left) * sy_left;
-  x_displace_right = (static_cast<float>(dx_right) / length_right) * sx_right;
-  y_displace_right = (static_cast<float>(dy_right) / length_right) * sy_right;
-
 	IVec2 left{};
 	IVec2 right{};
 	int last_y{};
@@ -292,8 +232,8 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 		// left
 		last_y = left.y;
 		while (left.y == last_y) {
-			left.x = static_cast<int>(std::round(index_left * x_displace_left + start_left.x));
-			left.y = static_cast<int>(std::round(index_left * y_displace_left + start_left.y));
+			left.x = static_cast<int>(std::round(index_left * x_displace_left + v_start.x));
+			left.y = static_cast<int>(std::round(index_left * y_displace_left + v_start.y));
 			if (index_left >= length_left) { break; }
 			index_left++;
 		}
@@ -301,14 +241,17 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 		// right
 		last_y = right.y;
 		while (right.y == last_y) {
-			right.x = static_cast<int>(std::round(index_right * x_displace_right + start_right.x));
-			right.y = static_cast<int>(std::round(index_right * y_displace_right + start_right.y));
+			right.x = static_cast<int>(std::round(index_right * x_displace_right + v_start.x));
+			right.y = static_cast<int>(std::round(index_right * y_displace_right + v_start.y));
 			if (index_right >= length_right) { break; }
 			index_right++;
 		}
 
 		// fill
 		for (int i = left.x; i <= right.x; i++) {
+			if (switched_xy) {
+				pixels.push_back(IVec2{left.y, i});
+			}
 			pixels.push_back(IVec2{i, left.y});
 		}
 
@@ -603,6 +546,8 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 		points.push_back(world_to_screen(viewport, fpoints[i]).get_IVec2());
 	}
 
+	fmt::print("points.size(): {}\n", points.size());
+
 	struct ITrigon {
 		IVec2 p0;
 		IVec2 p1;
@@ -610,26 +555,50 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 	};
 	std::vector<ITrigon> trigons{};
 
+	// ---- split quad into trigons ----
 	if (points.size() == 4) {
-		trigons.push_back(ITrigon{points[0], points[1], points[2]});
-		trigons.push_back(ITrigon{points[0], points[2], points[3]});
+		Vec2 centeroid{};
+		for (int i = 0; i < 4; i++) {
+			centeroid.x += points[i].x;
+			centeroid.y += points[i].y;
+		}
+		centeroid = centeroid * 0.25;
+
+    std::array<int,4> idx = {0,1,2,3};
+    auto angle = [&](int i){ 
+			Vec2 v = points[i].get_Vec2() - centeroid;
+			return std::atan2(v.y, v.x); 
+		};
+    std::sort(idx.begin(), idx.end(), [&](int a, int b){ return angle(a) < angle(b); });
+
+		trigons.push_back(ITrigon{points[idx[0]], points[idx[2]], points[idx[1]]});
+		trigons.push_back(ITrigon{points[idx[0]], points[idx[2]], points[idx[3]]});
 	} else {
 		trigons.push_back(ITrigon{points[0], points[1], points[2]});
 	}
 
-	for (size_t i = trigons.size() - 1; i >= 0; i--) {
+	// ---- draw all trigons ----
+	for (size_t i = 0; i < trigons.size(); i++) {
 		ITrigon& trigon = trigons[i];
+
+		// early continue if trigon has no area
+		if ((trigon.p0.x == trigon.p1.x && trigon.p0.y == trigon.p1.y) ||
+				(trigon.p0.x == trigon.p2.x && trigon.p0.y == trigon.p2.y) ||
+				(trigon.p1.x == trigon.p2.x && trigon.p1.y == trigon.p2.y)) {
+			continue;
+		}
+
+		// if allready flat, draw right away
 		if (trigon.p0.x == trigon.p1.x ||
 				trigon.p0.x == trigon.p2.x ||
 				trigon.p1.x == trigon.p2.x ||
 				trigon.p0.y == trigon.p1.y ||
 				trigon.p0.y == trigon.p2.y ||
 				trigon.p1.y == trigon.p2.y) {
-			// send
-			draw_lerp_line_trigon(pixel_buffer, viewport, trigon.p0,
+			draw_lerp_line_trigon2(pixel_buffer, viewport, trigon.p0,
 														trigon.p1, trigon.p2, color);
 		} else {
-		// sort for smallest y
+		// sort for smallest y coordinate
 			do {
 				IVec2 temp = trigon.p0;
 				if (temp.y > trigon.p1.y) {
@@ -644,80 +613,16 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 				}
 			} while (trigon.p0.y > trigon.p1.y || trigon.p1.y > trigon.p2.y);
 
-			// split, send both splits
+			// split horizontally, draw both splits
 			float k = static_cast<float>(trigon.p1.y - trigon.p0.y) /
 								(trigon.p2.y - trigon.p0.y);
-			IVec2 p3 {static_cast<int>(std::round(trigon.p0.x + k * (trigon.p2.x - trigon.p0.x))), trigon.p1.y};
-			draw_lerp_line_trigon(pixel_buffer, viewport, trigon.p0,
+			IVec2 p3 {static_cast<int>(std::round(trigon.p0.x + k * 
+								(trigon.p2.x - trigon.p0.x))), trigon.p1.y};
+			draw_lerp_line_trigon2(pixel_buffer, viewport, trigon.p0,
 														trigon.p1, p3, color);
-			draw_lerp_line_trigon(pixel_buffer, viewport, trigon.p0,
-														trigon.p2, p3, color);
+			draw_lerp_line_trigon2(pixel_buffer, viewport, trigon.p2,
+														trigon.p1, p3, color);
 		}
-	}
-	return;
-	
-	// if 4, split
-	
-	// if 3, if no 2 points same x or y, split and send to lerp_trigon
-
-// sort for smallest y
-  do {
-    Vec2 temp = p0;
-    if (temp.y > p1.y) {
-      p0 = p1;
-      p1 = temp;
-    }
-
-    if (p2.y < p1.y) {
-      temp = p1;
-      p1 = p2;
-      p2 = temp;
-    }
-  } while (p0.y > p1.y || p1.y > p2.y);
-
-	IVec2 pos0{};
-	pos0.x = std::roundl(p0.x);
-	pos0.y = std::roundl(p0.y);
-
-	IVec2 pos1{};
-	pos1.x = std::roundl(p1.x);
-	pos1.y = std::roundl(p1.y);
-
-	IVec2 pos2{};
-	pos2.x = std::roundl(p2.x);
-	pos2.y = std::roundl(p2.y);
-
-
-
-	if (pos0.y == pos1.y || pos0.y == pos2.y || pos1.y == pos2.y) {
-		if (impl == 0) {
-			draw_lerp_line_trigon(pixel_buffer, viewport, pos0, pos1, pos2, color);
-		} else {
-			bresenham_flat_trigon(pixel_buffer, viewport, pos0, pos1, pos2, color);
-		}
-		return;
-	}
-
-	// I draw the middle line twice, but this is cheap so why care
-	float k{};
-	if (p2.y != p0.y) {
-		k = (p1.y - p0.y) / (p2.y - p0.y);
-	}
-	Vec2 p3 {p0.x + k * (p2.x - p0.x), p1.y};
-
-	IVec2 pos3{};
-	pos3.x = std::roundl(p3.x);
-	pos3.y = std::roundl(p3.y);
-
-	// fmt::print("###\n0: {}, {}\n1: {}, {}\n2: {}, {}\n3: {}, {}\n\n", 
-	// 	pos0.x, pos0.y, pos1.x, pos1.y, pos2.x, pos2.y, pos3.x, pos3.y);
-
-	if (impl == 0) {
-		draw_lerp_line_trigon(pixel_buffer, viewport, pos0, pos1, pos3, color);
-		draw_lerp_line_trigon(pixel_buffer, viewport, pos1, pos2, pos3, color);
-	} else {
-		bresenham_flat_trigon(pixel_buffer, viewport, pos0, pos1, pos3, color);
-		bresenham_flat_trigon(pixel_buffer, viewport, pos1, pos2, pos3, color);
 	}
 }
 
