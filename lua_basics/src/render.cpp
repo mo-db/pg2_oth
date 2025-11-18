@@ -505,9 +505,9 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 	p2 = world_to_screen(viewport, p2);
 
 	// define screen borders
-	Vec2 rect_start{100.0f, 100.0f};
-	Vec2 rect_end{static_cast<float>(pixel_buffer.width) - 100.0f,
-								static_cast<float>(pixel_buffer.height) - 100.0f};
+	Vec2 rect_start{200.0f, 200.0f};
+	Vec2 rect_end{static_cast<float>(pixel_buffer.width) - 200.0f,
+								static_cast<float>(pixel_buffer.height) - 200.0f};
 	// all relevant points to build trigons
 	std::vector<Vec2> fpoints{};
 

@@ -108,15 +108,15 @@ void foo_func(App& app) {
 
 
 	const auto start_2 = core::Clock::now();
-	// for (int i = 0; i < 50; i++) {
-	// 	rn0 = SDL_randf();
-	// 	rn1 = SDL_randf();
-	// 	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
-	// 								 v0, v1, {w*rn0, h*rn1}, 0xFFFF0000, 0);
-	// }
+	for (int i = 0; i < 100; i++) {
+		rn0 = SDL_randf();
+		rn1 = SDL_randf();
+		draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
+									 v0, v1, {w*rn0, h*rn1}, 0xFFFF0000, 0);
+	}
 
-	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
-							v0, v1, mouse, 0x550000FF, 0);
+	// draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
+	// 						v0, v1, mouse, 0x550000FF, 0);
 
 
 	// int ww;
