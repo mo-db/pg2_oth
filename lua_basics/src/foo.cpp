@@ -83,8 +83,8 @@ void foo_func(App& app) {
 	float w = (float)(*app.video.pixel_buffer).width;
 	float h = (float)(*app.video.pixel_buffer).height;
 	
-	Vec2 v0{0.0f, 0.0f};
-	Vec2 v1{50.0f, 0.0f};
+	Vec2 v0{300.0f, 300.0f};
+	Vec2 v1{700.0f, 400.0f};
 
 	const auto start = core::Clock::now();
 	// for (int i = 0; i < 20; i++) {
@@ -93,12 +93,12 @@ void foo_func(App& app) {
 	// 	bary_triangle(*app.video.pixel_buffer, *app.video.viewport, 
 	// 								 v0, v1, {w*rn0, h*rn1}, 0xFF0000FF);
 	// }
-	for (int i = 0; i < 50; i++) {
-		rn0 = SDL_randf();
-		rn1 = SDL_randf();
-		draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
-									 v0, v1, {w*rn0, h*rn1}, 0xFFFF0000, 1);
-	}
+	// for (int i = 0; i < 50; i++) {
+	// 	rn0 = SDL_randf();
+	// 	rn1 = SDL_randf();
+	// 	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
+	// 								 v0, v1, {w*rn0, h*rn1}, 0xFFFF0000, 1);
+	// }
 
 	// bary_triangle(*app.video.pixel_buffer, *app.video.viewport, 
 	// 		v0, v1, mouse, 0xFFFF0000);
@@ -107,15 +107,15 @@ void foo_func(App& app) {
 
 
 	const auto start_2 = core::Clock::now();
-	for (int i = 0; i < 50; i++) {
-		rn0 = SDL_randf();
-		rn1 = SDL_randf();
-		draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
-									 v0, v1, {w*rn0, h*rn1}, 0xFFFF0000, 0);
-	}
+	// for (int i = 0; i < 50; i++) {
+	// 	rn0 = SDL_randf();
+	// 	rn1 = SDL_randf();
+	// 	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
+	// 								 v0, v1, {w*rn0, h*rn1}, 0xFFFF0000, 0);
+	// }
 
-	// draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
-	// 						{300,0}, {800, 0}, mouse, 0xFF0000FF, 0);
+	draw_trigon(*app.video.pixel_buffer, *app.video.viewport, 
+							v0, v1, mouse, 0xFF0000FF, 0);
 
 
 	// int ww;

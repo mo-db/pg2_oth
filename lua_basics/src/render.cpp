@@ -1,22 +1,61 @@
 #include "render.hpp"
 
-namespace render {
-void color_pixels(PixelBuffer& pixel_buffer, std::vector<IVec2>& pixels,
-		uint32_t color) {
-	for (size_t i = 0; i < pixels.size(); i++) {
-		int x = pixels[i].x;
-		int y = pixels[i].y;
+// world_to_screen conversion is done for the final vertexes to be drawn
 
-		if (x >= 0 && y >= 0 &&
-				x < pixel_buffer.width &&
-				y < pixel_buffer.height) {
-			pixel_buffer.pixels[x + y * pixel_buffer.width] = color;
-		}
+namespace render {
+
+// there can be max of 2 ixn points
+std::vector<Vec2>
+	linesegment_rect_intersect(Vec2 rect_start, Vec2 rect_end, Vec2 line_start, Vec2 line_end) {
+	float x_min = std::min(rect_start.x, rect_end.x);
+	float x_max = std::max(rect_start.x, rect_end.x);
+	float y_min = std::min(rect_start.y, rect_end.y);
+	float y_max = std::max(rect_start.y, rect_end.y);
+
+	std::vector<Vec2> ixn_points{};
+
+	float m = (line_end.y - line_start.y) / (line_end.x - line_start.x);
+	float ixn_x = (y_min - line_start.y) / m + line_start.x;
+	if (ixn_x > x_min && ixn_x < x_max && 
+			std::min(line_start.y, line_end.y) < y_min && 
+			std::max(line_start.y, line_end.y) > y_min) {
+		ixn_points.push_back({ixn_x, y_min});
 	}
+	float ixn_y = (x_min - line_start.x) * m + line_start.y;
+	if (ixn_y > y_min && ixn_y < y_max && 
+			std::min(line_start.x, line_end.x) < x_min && 
+			std::max(line_start.x, line_end.x) > x_min) {
+		ixn_points.push_back({x_min, ixn_y});
+	}
+	float ixn_w = (y_max - line_start.y) / m + line_start.x;
+	if (ixn_w > x_min && ixn_w < x_max && 
+			std::min(line_start.y, line_end.y) < y_max && 
+			std::max(line_start.y, line_end.y) > y_max) {
+		ixn_points.push_back({ixn_w, y_max});
+	}
+	float ixn_h = (x_max - line_start.x) * m + line_start.y;
+	if (ixn_h > y_min && ixn_h < y_max && 
+			std::min(line_start.x, line_end.x) < x_max && 
+			std::max(line_start.x, line_end.x) > x_max) {
+		ixn_points.push_back({x_max, ixn_h});
+	}
+	return ixn_points;
 }
+
 
 void PixelBuffer::clear(uint32_t color) {
 	for (int i = 0; i < width * height; i++) { pixels[i] = color; }
+}
+
+void color_pixels(PixelBuffer &pixel_buffer, std::vector<IVec2> &pixels,
+                  uint32_t color) {
+  for (size_t i = 0; i < pixels.size(); i++) {
+    int x = pixels[i].x;
+    int y = pixels[i].y;
+    if (x >= 0 && y >= 0 && x < pixel_buffer.width && y < pixel_buffer.height) {
+      pixel_buffer.pixels[x + y * pixel_buffer.width] = color;
+    }
+  }
 }
 
 Vec2 world_to_screen(Viewport& viewport, const Vec2 &point_world) {
@@ -57,15 +96,20 @@ void draw_rect(PixelBuffer& pixel_buffer, Viewport& viewport, Vec2 p1, Vec2 p2, 
 void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport, 
 		 								Vec2 p0, Vec2 p1, uint32_t color) {
 
-	std::vector<IVec2> pixels{};
+	IVec2 v0 = world_to_screen(viewport, p0).get_IVec2();
+	IVec2 v1 = world_to_screen(viewport, p1).get_IVec2();
+	IVec2 vertex{};
 
-	float dx = std::abs(p1.x - p0.x);
-	float dy = std::abs(p1.y - p0.y);
-	float length = std::max(dx, dy);
+	int dx = std::abs(v1.x - v0.x);
+	int dy = std::abs(v1.y - v0.y);
+	int length = std::max(dx, dy);
+
+	std::vector<IVec2> pixels{};
+	pixels.reserve(length);
 
 	// normal displacement vector for Chebyshev distance
-  float unit_displacement_x = dx / length;
-  float unit_displacement_y = dy / length;
+  float x_displace = static_cast<float>(dx) / length;
+  float y_displace = static_cast<float>(dy) / length;
 
 	for (int i = 0; i < length; i++) {
 		// float t = static_cast<float>(i) / static_cast<float>(length);
@@ -80,19 +124,19 @@ void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 		// float y = (1.0f - t) * static_cast<float>(start.y) + t * static_cast<float>(end.y);
 
 		// use normal vector to avoid division every step
-		float x = i * unit_displacement_x + p0.x;
-		float y = i * unit_displacement_y + p0.y;
-
-
-		pixels.push_back(IVec2{static_cast<int>(std::round(x)),
-													static_cast<int>(std::round(y))});
+		vertex.x = static_cast<int>(std::round(i * x_displace + v0.x));
+		vertex.y = static_cast<int>(std::round(i * y_displace + v0.y));
+		pixels.push_back(vertex);
 	}
 	color_pixels(pixel_buffer, pixels, color);
 }
 
+// only works with a ones sinde flat triangle
+// scanline vertical or horizontal depending on what side is flat
 void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport, 
 		 								IVec2 v0, IVec2 v1, IVec2 v2, uint32_t color) {
 
+	// find the flat side
 	// ---- sort the vertices ----
 	IVec2 v_start{};
 	IVec2 v_left{};
@@ -154,6 +198,81 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
   float x_displace_right = (static_cast<float>(dx_right) / length_right) * sx_right;
   float y_displace_right = (static_cast<float>(dy_right) / length_right) * sy_right;
 
+	// y: max(std::min(pixel_buffer.height, v_start.y), 0)
+
+	// ---- start
+	int min_x = 100;
+	int max_x = pixel_buffer.width-100;
+	int min_y = 100;
+	int max_y = pixel_buffer.height-100;
+
+	int clamp_start_x = std::max(std::min(max_x, v_start.x), min_x);
+	int clamp_start_y = std::max(std::min(max_y, v_start.y), min_y);
+
+	Vec2 clamp_start_left = v_start.get_Vec2();
+	// if (clamp_start_y != v_start.y) {
+	// 	float k_left = (clamp_start_y - v_start.y) / y_displace_left;
+	// 	float x = k_left * x_displace_left + v_start.x;
+	//
+	// 	clamp_start_left.x = std::max(std::min(static_cast<float>(max_x), x),
+	// 																static_cast<float>(min_x));
+	// 	clamp_start_left.y = clamp_start_y;
+	// }
+	// if (clamp_start_x != v_start.x) {
+	// 	float k_left = (clamp_start_x - v_start.x) / x_displace_left;
+	// 	float y = k_left * y_displace_left + v_start.y;
+	//
+	// 	clamp_start_left.y = std::max(std::min(static_cast<float>(max_y), y),
+	// 			static_cast<float>(min_y));
+	// 	clamp_start_left.x = clamp_start_x;
+	// }
+
+	Vec2 clamp_start_right = v_start.get_Vec2();
+	// if (clamp_start_y != v_start.y) {
+	// 	float k_right = (clamp_start_y - v_start.y) / y_displace_right;
+	// 	float x = k_right * x_displace_right + v_start.x;
+	//
+	// 	clamp_start_right.x = std::max(std::min(static_cast<float>(max_x), x),
+	// 																 static_cast<float>(min_x));
+	// 	clamp_start_right.y = clamp_start_y;
+	// }
+	// if (clamp_start_x != v_start.x) {
+	// 	float k_right = (clamp_start_x - v_start.x) / x_displace_right;
+	// 	float y = k_right * y_displace_right + v_start.y;
+	//
+	// 	clamp_start_right.y = std::max(std::min(static_cast<float>(max_y), y),
+	// 			static_cast<float>(min_y));
+	// 	clamp_start_right.x = clamp_start_x;
+	// }
+
+
+	Vec2 clamp_end_left = v_left.get_Vec2();
+	Vec2 clamp_end_right = v_right.get_Vec2();
+
+	// ...
+
+	IVec2 start_left = clamp_start_left.get_IVec2();
+	IVec2 start_right = clamp_start_right.get_IVec2();
+	IVec2 end_left = clamp_end_left.get_IVec2();
+	IVec2 end_right = clamp_end_right.get_IVec2();
+
+	dx_left = std::abs(end_left.x - start_left.x);
+	dy_left = std::abs(end_left.y - start_left.y);
+	sx_left = (start_left.x < end_left.x) ? 1 : -1;
+	sy_left = (start_left.y < end_left.y) ? 1 : -1;
+	length_left = std::max(dx_left, dy_left);
+
+	dx_right = std::abs(end_right.x - start_right.x);
+	dy_right = std::abs(end_right.y - start_right.y);
+	sx_right = (start_right.x < end_right.x) ? 1 : -1;
+	sy_right = (start_right.y < end_right.y) ? 1 : -1;
+	length_right = std::max(dx_right, dy_right);
+
+  x_displace_left = (static_cast<float>(dx_left) / length_left) * sx_left;
+  y_displace_left = (static_cast<float>(dy_left) / length_left) * sy_left;
+  x_displace_right = (static_cast<float>(dx_right) / length_right) * sx_right;
+  y_displace_right = (static_cast<float>(dy_right) / length_right) * sy_right;
+
 	IVec2 left{};
 	IVec2 right{};
 	int last_y{};
@@ -165,8 +284,8 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 		// left
 		last_y = left.y;
 		while (left.y == last_y) {
-			left.x = static_cast<int>(std::round(index_left * x_displace_left + v_start.x));
-			left.y = static_cast<int>(std::round(index_left * y_displace_left + v_start.y));
+			left.x = static_cast<int>(std::round(index_left * x_displace_left + start_left.x));
+			left.y = static_cast<int>(std::round(index_left * y_displace_left + start_left.y));
 			if (index_left >= length_left) { break; }
 			index_left++;
 		}
@@ -174,8 +293,8 @@ void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport,
 		// right
 		last_y = right.y;
 		while (right.y == last_y) {
-			right.x = static_cast<int>(std::round(index_right * x_displace_right + v_start.x));
-			right.y = static_cast<int>(std::round(index_right * y_displace_right + v_start.y));
+			right.x = static_cast<int>(std::round(index_right * x_displace_right + start_right.x));
+			right.y = static_cast<int>(std::round(index_right * y_displace_right + start_right.y));
 			if (index_right >= length_right) { break; }
 			index_right++;
 		}
@@ -432,6 +551,41 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 	p0 = world_to_screen(viewport, p0);
 	p1 = world_to_screen(viewport, p1);
 	p2 = world_to_screen(viewport, p2);
+
+	// for all 3 line vector, check for x and y axis 
+	// intersection on edges of screen 
+
+	Vec2 rect_start{100.0f, 100.0f};
+	Vec2 rect_end{static_cast<float>(pixel_buffer.width) - 100.0f,
+								static_cast<float>(pixel_buffer.height) - 100.0f};
+	std::vector<Vec2> ixn_points0 = 
+		linesegment_rect_intersect(rect_start, rect_end, p0, p1);
+	std::vector<Vec2> ixn_points1 = 
+		linesegment_rect_intersect(rect_start, rect_end, p0, p2);
+	std::vector<Vec2> ixn_points2 = 
+		linesegment_rect_intersect(rect_start, rect_end, p1, p2);
+
+	if (!ixn_points0.empty()) {
+		fmt::print("ixn0 {}, {}\n", ixn_points0[0].x, ixn_points0[0].y);
+	}
+	if (!ixn_points1.empty()) {
+		fmt::print("ixn1 {}, {}\n", ixn_points1[0].x, ixn_points1[0].y);
+	}
+	if (!ixn_points2.empty()) {
+		fmt::print("ixn2 {}, {}\n", ixn_points2[0].x, ixn_points2[0].y);
+	}
+
+	draw_lerp_line(pixel_buffer, viewport, {0,0}, {500, 500}, 0xFFFFFFFF);
+	for (size_t i = 0; i < ixn_points0.size(); i++) {
+		draw_lerp_line(pixel_buffer, viewport, {0,0}, ixn_points0[i], 0xFFFF0000);
+	}
+	for (size_t i = 0; i < ixn_points1.size(); i++) {
+		draw_lerp_line(pixel_buffer, viewport, {0,0}, ixn_points1[i], 0xFF00FF00);
+	}
+	for (size_t i = 0; i < ixn_points2.size(); i++) {
+		draw_lerp_line(pixel_buffer, viewport, {0,0}, ixn_points2[i], 0xFF0000FF);
+	}
+
 
 	// sort for smallest y
   do {

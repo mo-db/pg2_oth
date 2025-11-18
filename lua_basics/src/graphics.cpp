@@ -1,6 +1,10 @@
 #include "graphics.hpp"
 
 // ---- Vec2 ----
+IVec2 Vec2::get_IVec2() {
+	return {static_cast<int>(std::round(x)),
+					static_cast<int>(std::round(y))};
+}
 void Vec2::normalize() { 
 	float m = get_mag(); x /= m; y /= m;
 }
@@ -54,7 +58,10 @@ bool equal_epsilon(const Vec2 &a, const Vec2 &b) {
 }
 } // namespace vec2
 
-
+// ---- IVec2 ----
+Vec2 IVec2::get_Vec2() {
+	return {static_cast<float>(x), static_cast<float>(y)};
+}
 IVec2 operator+(const IVec2 &a, const IVec2 &b) {
 	return {a.x + b.x, a.y + b.y};
 }
@@ -67,7 +74,6 @@ IVec2 operator*(const IVec2 &v, int d) {
 IVec2 operator*(int d, const IVec2 &v) {
 	return {v.x * d, v.y * d};
 }
-
 
 
 // ---- Line2 ----
