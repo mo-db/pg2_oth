@@ -4,6 +4,14 @@
 
 namespace render {
 
+bool inside_rect(Vec2 rect_start, Vec2 rect_end, Vec2 p) {
+  float x_min = std::min(rect_start.x, rect_end.x);
+  float x_max = std::max(rect_start.x, rect_end.x);
+  float y_min = std::min(rect_start.y, rect_end.y);
+  float y_max = std::max(rect_start.y, rect_end.y);
+  return p.x > x_min && p.x < x_max && p.y > y_min && p.y < y_max;
+}
+
 // there can be max of 2 ixn points
 std::vector<Vec2>
 	linesegment_rect_intersect(Vec2 rect_start, Vec2 rect_end, Vec2 line_start, Vec2 line_end) {
@@ -132,7 +140,7 @@ void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 }
 
 // only works with a ones sinde flat triangle
-// scanline vertical or horizontal depending on what side is flat
+// TODO: scanline vertical or horizontal depending on what side is flat
 void draw_lerp_line_trigon(PixelBuffer& pixel_buffer, Viewport& viewport, 
 		 								IVec2 v0, IVec2 v1, IVec2 v2, uint32_t color) {
 
@@ -552,12 +560,14 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 	p1 = world_to_screen(viewport, p1);
 	p2 = world_to_screen(viewport, p2);
 
-	// for all 3 line vector, check for x and y axis 
-	// intersection on edges of screen 
-
+	// define screen borders
 	Vec2 rect_start{100.0f, 100.0f};
 	Vec2 rect_end{static_cast<float>(pixel_buffer.width) - 100.0f,
 								static_cast<float>(pixel_buffer.height) - 100.0f};
+	// all relevant points to build trigons
+	std::vector<Vec2> fpoints{};
+
+	// calculate ixn_points with screen borders
 	std::vector<Vec2> ixn_points0 = 
 		linesegment_rect_intersect(rect_start, rect_end, p0, p1);
 	std::vector<Vec2> ixn_points1 = 
@@ -565,29 +575,92 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 	std::vector<Vec2> ixn_points2 = 
 		linesegment_rect_intersect(rect_start, rect_end, p1, p2);
 
-	if (!ixn_points0.empty()) {
-		fmt::print("ixn0 {}, {}\n", ixn_points0[0].x, ixn_points0[0].y);
-	}
-	if (!ixn_points1.empty()) {
-		fmt::print("ixn1 {}, {}\n", ixn_points1[0].x, ixn_points1[0].y);
-	}
-	if (!ixn_points2.empty()) {
-		fmt::print("ixn2 {}, {}\n", ixn_points2[0].x, ixn_points2[0].y);
-	}
-
-	draw_lerp_line(pixel_buffer, viewport, {0,0}, {500, 500}, 0xFFFFFFFF);
+	// add ixn_points to fpoints
 	for (size_t i = 0; i < ixn_points0.size(); i++) {
-		draw_lerp_line(pixel_buffer, viewport, {0,0}, ixn_points0[i], 0xFFFF0000);
+		fpoints.push_back(ixn_points0[i]);
 	}
 	for (size_t i = 0; i < ixn_points1.size(); i++) {
-		draw_lerp_line(pixel_buffer, viewport, {0,0}, ixn_points1[i], 0xFF00FF00);
+		fpoints.push_back(ixn_points1[i]);
 	}
 	for (size_t i = 0; i < ixn_points2.size(); i++) {
-		draw_lerp_line(pixel_buffer, viewport, {0,0}, ixn_points2[i], 0xFF0000FF);
+		fpoints.push_back(ixn_points2[i]);
 	}
 
+	// add points inside rect borders to fpoints
+	if (inside_rect(rect_start, rect_end, p0)) {
+		fpoints.push_back(p0);
+	}
+	if (inside_rect(rect_start, rect_end, p1)) {
+		fpoints.push_back(p1);
+	}
+	if (inside_rect(rect_start, rect_end, p2)) {
+		fpoints.push_back(p2);
+	}
 
-	// sort for smallest y
+	// round all points to nerest int
+	std::vector<IVec2> points{};
+	for (size_t i = 0; i < fpoints.size(); i++) {
+		points.push_back(world_to_screen(viewport, fpoints[i]).get_IVec2());
+	}
+
+	struct ITrigon {
+		IVec2 p0;
+		IVec2 p1;
+		IVec2 p2;
+	};
+	std::vector<ITrigon> trigons{};
+
+	if (points.size() == 4) {
+		trigons.push_back(ITrigon{points[0], points[1], points[2]});
+		trigons.push_back(ITrigon{points[0], points[2], points[3]});
+	} else {
+		trigons.push_back(ITrigon{points[0], points[1], points[2]});
+	}
+
+	for (size_t i = trigons.size() - 1; i >= 0; i--) {
+		ITrigon& trigon = trigons[i];
+		if (trigon.p0.x == trigon.p1.x ||
+				trigon.p0.x == trigon.p2.x ||
+				trigon.p1.x == trigon.p2.x ||
+				trigon.p0.y == trigon.p1.y ||
+				trigon.p0.y == trigon.p2.y ||
+				trigon.p1.y == trigon.p2.y) {
+			// send
+			draw_lerp_line_trigon(pixel_buffer, viewport, trigon.p0,
+														trigon.p1, trigon.p2, color);
+		} else {
+		// sort for smallest y
+			do {
+				IVec2 temp = trigon.p0;
+				if (temp.y > trigon.p1.y) {
+					trigon.p0 = trigon.p1;
+					trigon.p1 = temp;
+				}
+
+				if (trigon.p2.y < trigon.p1.y) {
+					temp = trigon.p1;
+					trigon.p1 = trigon.p2;
+					trigon.p2 = temp;
+				}
+			} while (trigon.p0.y > trigon.p1.y || trigon.p1.y > trigon.p2.y);
+
+			// split, send both splits
+			float k = static_cast<float>(trigon.p1.y - trigon.p0.y) /
+								(trigon.p2.y - trigon.p0.y);
+			IVec2 p3 {static_cast<int>(std::round(trigon.p0.x + k * (trigon.p2.x - trigon.p0.x))), trigon.p1.y};
+			draw_lerp_line_trigon(pixel_buffer, viewport, trigon.p0,
+														trigon.p1, p3, color);
+			draw_lerp_line_trigon(pixel_buffer, viewport, trigon.p0,
+														trigon.p2, p3, color);
+		}
+	}
+	return;
+	
+	// if 4, split
+	
+	// if 3, if no 2 points same x or y, split and send to lerp_trigon
+
+// sort for smallest y
   do {
     Vec2 temp = p0;
     if (temp.y > p1.y) {
