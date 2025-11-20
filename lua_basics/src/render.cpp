@@ -3,54 +3,6 @@
 // world_to_screen conversion is done for the final vertexes to be drawn
 
 namespace render {
-
-bool inside_rect(Vec2 rect_start, Vec2 rect_end, Vec2 p) {
-  float x_min = std::min(rect_start.x, rect_end.x);
-  float x_max = std::max(rect_start.x, rect_end.x);
-  float y_min = std::min(rect_start.y, rect_end.y);
-  float y_max = std::max(rect_start.y, rect_end.y);
-  return p.x > x_min && p.x < x_max && p.y > y_min && p.y < y_max;
-}
-
-// there can be max of 2 ixn points
-std::vector<Vec2>
-	linesegment_rect_intersect(Vec2 rect_start, Vec2 rect_end, Vec2 line_start, Vec2 line_end) {
-	float x_min = std::min(rect_start.x, rect_end.x);
-	float x_max = std::max(rect_start.x, rect_end.x);
-	float y_min = std::min(rect_start.y, rect_end.y);
-	float y_max = std::max(rect_start.y, rect_end.y);
-
-	std::vector<Vec2> ixn_points{};
-
-	float m = (line_end.y - line_start.y) / (line_end.x - line_start.x);
-	float ixn_x = (y_min - line_start.y) / m + line_start.x;
-	if (ixn_x > x_min && ixn_x < x_max && 
-			std::min(line_start.y, line_end.y) < y_min && 
-			std::max(line_start.y, line_end.y) > y_min) {
-		ixn_points.push_back({ixn_x, y_min});
-	}
-	float ixn_y = (x_min - line_start.x) * m + line_start.y;
-	if (ixn_y > y_min && ixn_y < y_max && 
-			std::min(line_start.x, line_end.x) < x_min && 
-			std::max(line_start.x, line_end.x) > x_min) {
-		ixn_points.push_back({x_min, ixn_y});
-	}
-	float ixn_w = (y_max - line_start.y) / m + line_start.x;
-	if (ixn_w > x_min && ixn_w < x_max && 
-			std::min(line_start.y, line_end.y) < y_max && 
-			std::max(line_start.y, line_end.y) > y_max) {
-		ixn_points.push_back({ixn_w, y_max});
-	}
-	float ixn_h = (x_max - line_start.x) * m + line_start.y;
-	if (ixn_h > y_min && ixn_h < y_max && 
-			std::min(line_start.x, line_end.x) < x_max && 
-			std::max(line_start.x, line_end.x) > x_max) {
-		ixn_points.push_back({x_max, ixn_h});
-	}
-	return ixn_points;
-}
-
-
 void PixelBuffer::clear(uint32_t color) {
 	for (int i = 0; i < width * height; i++) { pixels[i] = color; }
 }
@@ -138,7 +90,7 @@ void draw_lerp_line(PixelBuffer& pixel_buffer, Viewport& viewport,
 	}
 	color_pixels(pixel_buffer, pixels, color);
 }
-void draw_lerp_line_trigon2(PixelBuffer &pixel_buffer, Viewport &viewport,
+void draw_lerp_line_trigon(PixelBuffer &pixel_buffer,
                             IVec2 v0, IVec2 v1, IVec2 v2, uint32_t color) {
   bool switched_xy{false};
   if (v0.x == v1.x || v0.x == v2.x || v1.x == v2.x) {
@@ -513,11 +465,11 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 
 	// calculate ixn_points with screen borders
 	std::vector<Vec2> ixn_points0 = 
-		linesegment_rect_intersect(rect_start, rect_end, p0, p1);
+		rect_line_intersect(rect_start, rect_end, p0, p1);
 	std::vector<Vec2> ixn_points1 = 
-		linesegment_rect_intersect(rect_start, rect_end, p0, p2);
+		rect_line_intersect(rect_start, rect_end, p0, p2);
 	std::vector<Vec2> ixn_points2 = 
-		linesegment_rect_intersect(rect_start, rect_end, p1, p2);
+		rect_line_intersect(rect_start, rect_end, p1, p2);
 
 	// add ixn_points to fpoints
 	for (size_t i = 0; i < ixn_points0.size(); i++) {
@@ -531,13 +483,13 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 	}
 
 	// add points inside rect borders to fpoints
-	if (inside_rect(rect_start, rect_end, p0)) {
+	if (rect_contains_point(rect_start, rect_end, p0)) {
 		fpoints.push_back(p0);
 	}
-	if (inside_rect(rect_start, rect_end, p1)) {
+	if (rect_contains_point(rect_start, rect_end, p1)) {
 		fpoints.push_back(p1);
 	}
-	if (inside_rect(rect_start, rect_end, p2)) {
+	if (rect_contains_point(rect_start, rect_end, p2)) {
 		fpoints.push_back(p2);
 	}
 
@@ -596,7 +548,7 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 				trigon.p0.y == trigon.p1.y ||
 				trigon.p0.y == trigon.p2.y ||
 				trigon.p1.y == trigon.p2.y) {
-			draw_lerp_line_trigon2(pixel_buffer, viewport, trigon.p0,
+			draw_lerp_line_trigon(pixel_buffer, trigon.p0,
 														trigon.p1, trigon.p2, color);
 		} else {
 		// sort for smallest y coordinate
@@ -619,9 +571,9 @@ void draw_trigon(PixelBuffer &pixel_buffer, Viewport &viewport, Vec2 p0,
 								(trigon.p2.y - trigon.p0.y);
 			IVec2 p3 {static_cast<int>(std::round(trigon.p0.x + k * 
 								(trigon.p2.x - trigon.p0.x))), trigon.p1.y};
-			draw_lerp_line_trigon2(pixel_buffer, viewport, trigon.p0,
+			draw_lerp_line_trigon(pixel_buffer, trigon.p0,
 														trigon.p1, p3, color);
-			draw_lerp_line_trigon2(pixel_buffer, viewport, trigon.p2,
+			draw_lerp_line_trigon(pixel_buffer, trigon.p2,
 														trigon.p1, p3, color);
 		}
 	}
